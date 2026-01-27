@@ -1,26 +1,220 @@
-@import "tailwindcss";
-
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --sand: #f9e7d4;
+  --rose: #f5b6a5;
+  --mint: #62c9a9;
+  --lavender: #9e8bff;
+  --ink: #4a4a4a;
+  --mist: #d4d4d4;
+  --card: #ffffff;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background: var(--sand);
+  color: var(--ink);
+  font-family: var(--font-poppins, "Poppins", "Inter", sans-serif);
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: var(--sand);
+}
+
+.app-header {
+  width: 100%;
+  background: var(--lavender);
+  color: var(--ink);
+  box-shadow: 0 6px 16px rgba(32, 24, 68, 0.12);
+}
+
+.app-header-inner {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.brand-pill {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: var(--sand);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  box-shadow: 0 6px 0 rgba(255, 255, 255, 0.7);
+}
+
+.brand-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: var(--rose);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background 200ms ease, transform 200ms ease;
+}
+
+.nav-link:hover {
+  background: var(--mint);
+  transform: translateY(-1px);
+}
+
+.app-main {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.app-card {
+  background: var(--card);
+  border-radius: 1.5rem;
+  padding: 2.5rem 1.5rem;
+  box-shadow: 0 16px 35px rgba(74, 74, 74, 0.12);
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.hero-kicker {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-weight: 600;
+  color: var(--mint);
+}
+
+.hero-title {
+  margin: 0.75rem 0 0;
+  font-size: 2.25rem;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.hero-text {
+  margin: 0.75rem 0 0;
+  font-size: 1rem;
+  line-height: 1.75;
+  color: rgba(74, 74, 74, 0.8);
+  max-width: 40rem;
+}
+
+.cta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  border-radius: 999px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--rose);
+  color: var(--ink);
+  box-shadow: 0 10px 20px rgba(245, 182, 165, 0.45);
+  transition: transform 200ms ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--ink);
+  border: 2px solid var(--mint);
+  transition: background 200ms ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(98, 201, 169, 0.3);
+}
+
+.feature-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.feature-card {
+  border-radius: 1rem;
+  border: 1px solid rgba(212, 212, 212, 0.6);
+  background: rgba(249, 231, 212, 0.4);
+  padding: 1.25rem;
+  box-shadow: 0 12px 24px rgba(98, 201, 169, 0.12);
+}
+
+.feature-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.feature-text {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: rgba(74, 74, 74, 0.7);
+}
+
+@media (min-width: 768px) {
+  .app-header-inner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .cta-row {
+    flex-direction: row;
+  }
+
+  .feature-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 640px) {
+  .app-card {
+    padding: 2.5rem;
+  }
+
+  .hero-title {
+    font-size: 2.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-title {
+    font-size: 3.25rem;
+  }
 }
