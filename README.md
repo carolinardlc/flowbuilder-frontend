@@ -25,4 +25,5 @@ Seguido paso, continuar con su instalación
 3- Correr el proyecto
 
 "npm install"
+"npm create vite@latest my-react-app -- --template react"
 "npm run dev"
