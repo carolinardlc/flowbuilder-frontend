@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Layout from "./components/Layout";
 
 export default function Home() {
@@ -17,7 +18,9 @@ export default function Home() {
         </div>
 
         <div className="cta-row">
-          <button className="btn-primary">Crear workflow</button>
+          <Link href="/workflows" className="btn-primary link-button">
+            Crear workflow
+          </Link>
           <button className="btn-secondary">Ver ejemplos</button>
         </div>
 
