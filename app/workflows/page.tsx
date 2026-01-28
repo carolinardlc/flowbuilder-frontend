@@ -62,18 +62,6 @@ export default function WorkflowsPage() {
                 >
                   Editar
                 </Link>
-                <button
-                  type="button"
-                  className="btn-secondary btn-danger"
-                  onClick={() =>
-                    setWorkflowToDelete({
-                      id: workflow.id,
-                      name: workflow.name,
-                    })
-                  }
-                >
-                  Eliminar
-                </button>
               </div>
             </article>
             );
