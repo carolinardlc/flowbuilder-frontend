@@ -15,13 +15,20 @@ export default function WorkflowConnection({
   const endY = to.y + 40;
   const controlX = (startX + endX) / 2;
 
-  const path = `M ${startX} ${startY} C ${controlX} ${startY}, ${controlX} ${endY}, ${endX} ${endY}`;
+  const path = `
+    M ${startX} ${startY}
+    C ${controlX} ${startY},
+      ${controlX} ${endY},
+      ${endX} ${endY}
+  `;
 
   return (
-    <path
-      d={path}
-      className="connection-path"
-      markerEnd="url(#arrowhead)"
-    />
+   <path
+  d={path}
+  className="fill-none stroke-current stroke-2"
+  strokeDasharray="6,4"
+  markerEnd="url(#arrowhead)"
+/>
+
   );
 }

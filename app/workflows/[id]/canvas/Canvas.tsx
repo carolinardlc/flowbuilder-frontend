@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useMemo, useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import WorkflowConnection from "./WorkflowConnection";
 import WorkflowNode, {
   type WorkflowNodeData,
@@ -30,35 +30,11 @@ type DragState = {
 };
 
 export default function Canvas({ workflowId, actions }: CanvasProps) {
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>("start");
-  const [nodes, setNodes] = useState<WorkflowNodeData[]>([
-    { id: "start", title: "Inicio", type: "START", x: 120, y: 140 },
-    {
-      id: "action-1",
-      title: "Recolectar datos",
-      type: "ACTION",
-      x: 420,
-      y: 140,
-    },
-    {
-      id: "conditional-1",
-      title: "Validar criterios",
-      type: "CONDITIONAL",
-      x: 740,
-      y: 140,
-    },
-    { id: "action-2", title: "Enviar correo", type: "ACTION", x: 1020, y: 40 },
-    { id: "end-1", title: "Finalizar", type: "END", x: 1320, y: 40 },
-    { id: "end-2", title: "Cerrar flujo", type: "END", x: 1020, y: 260 },
-  ]);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-  const [connections, setConnections] = useState<Connection[]>([
-    { id: "c1", from: "start", to: "action-1" },
-    { id: "c2", from: "action-1", to: "conditional-1" },
-    { id: "c3", from: "conditional-1", to: "action-2" },
-    { id: "c4", from: "action-2", to: "end-1" },
-    { id: "c5", from: "conditional-1", to: "end-2" },
-  ]);
+  // ✅ VACÍO por defecto
+  const [nodes, setNodes] = useState<WorkflowNodeData[]>([]);
+  const [connections, setConnections] = useState<Connection[]>([]);
 
   const [dragState, setDragState] = useState<DragState>({
     isDragging: false,
@@ -71,17 +47,72 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
   });
 
   const canvasRef = useRef<HTMLDivElement>(null);
-  const nodeIdCounter = useRef(6);
+
+  // ✅ IDs limpios desde 1
+  const nodeIdCounter = useRef(1);
+
+  // ✅ Key segura por workflowId (evita "undefined")
+  const safeWorkflowId = String(workflowId ?? "").trim();
+  const storageKey = safeWorkflowId ? `workflow-canvas:${safeWorkflowId}` : null;
 
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? null;
 
-  // Funciones para drag and drop
+  // =========================
+  // ✅ CARGAR desde localStorage
+  // =========================
+  useEffect(() => {
+    if (!storageKey) return;
+
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw) as {
+        nodes?: WorkflowNodeData[];
+        connections?: Connection[];
+      };
+
+      const loadedNodes = parsed.nodes ?? [];
+      const loadedConnections = parsed.connections ?? [];
+
+      setNodes(loadedNodes);
+      setConnections(loadedConnections);
+
+      // Recalcular contador para no repetir ids
+      const maxNum =
+        loadedNodes
+          .map((n) => Number(String(n.id).replace("node-", "")))
+          .filter((x) => Number.isFinite(x))
+          .reduce((a, b) => Math.max(a, b), 0) || 0;
+
+      nodeIdCounter.current = maxNum + 1;
+    } catch (err) {
+      console.error("Error loading canvas", err);
+    }
+  }, [storageKey]);
+
+  // =========================
+  // ✅ GUARDAR en localStorage
+  // =========================
+  useEffect(() => {
+    if (!storageKey) return;
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({ nodes, connections }));
+    } catch (err) {
+      console.error("Error saving canvas", err);
+    }
+  }, [storageKey, nodes, connections]);
+
+  // =========================
+  // Arrastrar un nodo existente
+  // =========================
   const handleNodeMouseDown = useCallback(
     (e: React.MouseEvent, nodeId: string) => {
       const node = nodes.find((n) => n.id === nodeId);
       if (!node) return;
 
-      const rect = e.currentTarget.getBoundingClientRect();
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
       setDragState({
         isDragging: true,
         draggedNode: nodeId,
@@ -94,11 +125,15 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
         connectionStart: null,
         tempConnection: null,
       });
+
       setSelectedNodeId(nodeId);
     },
     [nodes],
   );
 
+  // =========================
+  // Mouse move en canvas
+  // =========================
   const handleCanvasMouseMove = useCallback(
     (e: React.MouseEvent) => {
       if (!dragState.isDragging || !canvasRef.current) return;
@@ -111,6 +146,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
         // Mover nodo existente
         const newX = x - dragState.dragOffset.x;
         const newY = y - dragState.dragOffset.y;
+
         setNodes((prev) =>
           prev.map((node) =>
             node.id === dragState.draggedNode
@@ -118,10 +154,11 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
               : node,
           ),
         );
-      } else if (dragState.newNodeType) {
-        // Previsualizar nuevo nodo
-      } else if (dragState.isConnecting && dragState.connectionStart) {
-        // Actualizar conexión temporal
+        return;
+      }
+
+      if (dragState.isConnecting && dragState.connectionStart) {
+        // Conexión temporal (línea punteada)
         setDragState((prev) => ({
           ...prev,
           tempConnection: { x, y },
@@ -131,26 +168,32 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     [dragState],
   );
 
+  // =========================
+  // Mouse up en canvas
+  // =========================
   const handleCanvasMouseUp = useCallback(
     (e: React.MouseEvent) => {
-      if (dragState.newNodeType && canvasRef.current) {
-        // Crear nuevo nodo
+      const nodeType = dragState.newNodeType;
+
+      // Crear nuevo nodo (si venías arrastrando desde la paleta)
+      if (nodeType && canvasRef.current) {
         const canvasRect = canvasRef.current.getBoundingClientRect();
-        const x = e.clientX - canvasRect.left - 40; // Centro del nodo
+        const x = e.clientX - canvasRect.left - 40;
         const y = e.clientY - canvasRect.top - 20;
 
         const newNode: WorkflowNodeData = {
           id: `node-${nodeIdCounter.current++}`,
-          title: `Nuevo ${dragState.newNodeType}`,
-          type: dragState.newNodeType,
+          title: `Nuevo ${nodeType}`,
+          type: nodeType,
           x: Math.max(0, x),
           y: Math.max(0, y),
         };
 
         setNodes((prev) => [...prev, newNode]);
+        setSelectedNodeId(newNode.id);
       }
 
-      // Resetear estado de drag
+      // ✅ Reset drag/connect
       setDragState({
         isDragging: false,
         draggedNode: null,
@@ -164,6 +207,9 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     [dragState.newNodeType],
   );
 
+  // =========================
+  // Iniciar “drag” desde paleta
+  // =========================
   const handleNodeTypeDragStart = useCallback((nodeType: WorkflowNodeType) => {
     setDragState({
       isDragging: true,
@@ -176,12 +222,16 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     });
   }, []);
 
+  // =========================
+  // Eliminar nodo
+  // =========================
   const handleDeleteNode = useCallback(
     (nodeId: string) => {
       setNodes((prev) => prev.filter((n) => n.id !== nodeId));
       setConnections((prev) =>
         prev.filter((c) => c.from !== nodeId && c.to !== nodeId),
       );
+
       if (selectedNodeId === nodeId) {
         setSelectedNodeId(null);
       }
@@ -189,41 +239,52 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     [selectedNodeId],
   );
 
-  const handleStartConnection = useCallback((nodeId: string) => {
-    setDragState({
-      isDragging: true,
-      draggedNode: null,
-      dragOffset: { x: 0, y: 0 },
-      newNodeType: null,
-      isConnecting: true,
-      connectionStart: nodeId,
-      tempConnection: null,
-    });
-  }, []);
+  // =========================
+  // Iniciar conexión desde nodo (botón “Conectar desde aquí”)
+  // =========================
+  const handleStartConnection = useCallback(
+    (nodeId: string) => {
+      const startNode = nodes.find((n) => n.id === nodeId);
+      if (!startNode) return;
 
+      const startX = startNode.x + 180;
+      const startY = startNode.y + 40;
+
+      setDragState({
+        isDragging: true,
+        draggedNode: null,
+        dragOffset: { x: 0, y: 0 },
+        newNodeType: null,
+        isConnecting: true,
+        connectionStart: nodeId,
+        tempConnection: { x: startX, y: startY },
+      });
+    },
+    [nodes],
+  );
+
+  // =========================
+  // Completar conexión (click en nodo destino)
+  // =========================
   const handleCompleteConnection = useCallback(
     (targetNodeId: string) => {
-      if (
-        dragState.connectionStart &&
-        dragState.connectionStart !== targetNodeId
-      ) {
-        const newConnection: Connection = {
-          id: `c-${Date.now()}`,
-          from: dragState.connectionStart,
-          to: targetNodeId,
-        };
+      if (!dragState.connectionStart) return;
+      if (dragState.connectionStart === targetNodeId) return;
 
-        // Verificar si la conexión ya existe
-        const connectionExists = connections.some(
-          (c) => c.from === dragState.connectionStart && c.to === targetNodeId,
-        );
+      const fromId = dragState.connectionStart;
+      const toId = targetNodeId;
 
-        if (!connectionExists) {
-          setConnections((prev) => [...prev, newConnection]);
-        }
+      const connectionExists = connections.some(
+        (c) => c.from === fromId && c.to === toId,
+      );
+
+      if (!connectionExists) {
+        setConnections((prev) => [
+          ...prev,
+          { id: `c-${Date.now()}`, from: fromId, to: toId },
+        ]);
       }
 
-      // Resetear estado de conexión
       setDragState({
         isDragging: false,
         draggedNode: null,
@@ -241,30 +302,30 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     <div className="canvas-layout">
       <aside className="canvas-panel">
         <h3 className="panel-title">Arrastrar nodos</h3>
+
         <div className="node-palette">
-          {(
-            ["START", "ACTION", "CONDITIONAL", "END"] as WorkflowNodeType[]
-          ).map((nodeType) => (
-            <div
-              key={nodeType}
-              className={`draggable-node node node-${nodeType.toLowerCase()}`}
-              onMouseDown={() => handleNodeTypeDragStart(nodeType)}
-              style={{ cursor: "grab", marginBottom: "8px" }}
-            >
-              <span className="node-title">{nodeType}</span>
-            </div>
-          ))}
+          {(["START", "ACTION", "CONDITIONAL", "END"] as WorkflowNodeType[]).map(
+            (nodeType) => (
+              <div
+                key={nodeType}
+                className={`draggable-node node node-${nodeType.toLowerCase()}`}
+                onMouseDown={() => handleNodeTypeDragStart(nodeType)}
+                style={{ cursor: "grab", marginBottom: "8px" }}
+              >
+                <span className="node-title">{nodeType}</span>
+              </div>
+            ),
+          )}
         </div>
+
         <div className="panel-section" style={{ marginTop: "20px" }}>
           <h4 className="panel-title">Instrucciones</h4>
-          <ul
-            className="panel-list"
-            style={{ fontSize: "12px", lineHeight: "1.4" }}
-          >
+          <ul className="panel-list" style={{ fontSize: "12px", lineHeight: 1.4 }}>
             <li>Arrastra nodos del panel al canvas</li>
             <li>Click en nodos para seleccionar</li>
             <li>Arrastra nodos para mover</li>
             <li>Click en "Eliminar" para borrar</li>
+            <li>Para conectar: “Conectar desde aquí” y luego click en el nodo destino</li>
           </ul>
         </div>
       </aside>
@@ -290,7 +351,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
           onMouseLeave={handleCanvasMouseUp}
           style={{ cursor: dragState.isDragging ? "grabbing" : "default" }}
         >
-          <div className="canvas-grid">
+          <div className="canvas-grid" style={{ position: "relative" }}>
             <svg className="canvas-connections" viewBox="0 0 1600 800">
               <defs>
                 <marker
@@ -304,15 +365,17 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                   <path d="M 0 0 L 6 3 L 0 6" className="connection-arrow" />
                 </marker>
               </defs>
+
+              {/* Línea punteada temporal */}
               {dragState.isConnecting && dragState.tempConnection && (
                 <line
                   x1={
-                    nodes.find((n) => n.id === dragState.connectionStart)?.x! +
-                    80
+                    (nodes.find((n) => n.id === dragState.connectionStart)?.x ??
+                      0) + 180
                   }
                   y1={
-                    nodes.find((n) => n.id === dragState.connectionStart)?.y! +
-                    20
+                    (nodes.find((n) => n.id === dragState.connectionStart)?.y ??
+                      0) + 40
                   }
                   x2={dragState.tempConnection.x}
                   y2={dragState.tempConnection.y}
@@ -322,17 +385,36 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                   opacity="0.6"
                 />
               )}
+
+              {/* Conexiones reales */}
               {connections.map((connection) => {
                 const from = nodes.find((node) => node.id === connection.from);
                 const to = nodes.find((node) => node.id === connection.to);
-                if (!from || !to) {
-                  return null;
-                }
+                if (!from || !to) return null;
+
                 return (
                   <WorkflowConnection key={connection.id} from={from} to={to} />
                 );
               })}
             </svg>
+
+            {/* Mensaje si está vacío */}
+            {nodes.length === 0 && (
+              <div
+                className="canvas-empty"
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  fontSize: "14px",
+                  opacity: 0.7,
+                  pointerEvents: "none",
+                }}
+              >
+                Arrastra un nodo desde el panel izquierdo para comenzar
+              </div>
+            )}
 
             {nodes.map((node) => (
               <WorkflowNode
@@ -358,16 +440,20 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
 
       <aside className="canvas-panel canvas-panel-right">
         <h3 className="panel-title">Detalle del nodo</h3>
+
         {selectedNode ? (
           <div className="panel-card">
             <p className="panel-label">Título</p>
             <p className="panel-value">{selectedNode.title}</p>
+
             <p className="panel-label">Tipo</p>
             <p className="panel-value">{selectedNode.type}</p>
+
             <p className="panel-label">Posición</p>
             <p className="panel-value">
               X: {Math.round(selectedNode.x)}, Y: {Math.round(selectedNode.y)}
             </p>
+
             <div className="panel-section" style={{ marginTop: "16px" }}>
               <h4 className="panel-title">Conexiones</h4>
               <div style={{ fontSize: "12px" }}>
@@ -380,6 +466,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                   {connections.filter((c) => c.to === selectedNode.id).length}
                 </p>
               </div>
+
               <button
                 className="btn-secondary"
                 style={{ marginTop: "8px", width: "100%", fontSize: "12px" }}
@@ -388,15 +475,14 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                 Conectar desde aquí
               </button>
             </div>
-            {selectedNode.id !== "start" && (
-              <button
-                className="btn-primary btn-danger"
-                style={{ marginTop: "12px", width: "100%" }}
-                onClick={() => handleDeleteNode(selectedNode.id)}
-              >
-                Eliminar nodo
-              </button>
-            )}
+
+            <button
+              className="btn-primary btn-danger"
+              style={{ marginTop: "12px", width: "100%" }}
+              onClick={() => handleDeleteNode(selectedNode.id)}
+            >
+              Eliminar nodo
+            </button>
           </div>
         ) : (
           <p className="panel-empty">Selecciona un nodo para ver detalles.</p>
