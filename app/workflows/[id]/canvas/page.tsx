@@ -1,12 +1,12 @@
 import Link from "next/link";
-import Layout from "../../components/Layout";
-import WorkflowCanvas from "./_components/WorkflowCanvas";
+import Layout from "../../../components/Layout";
+import WorkflowCanvas from "../_components/WorkflowCanvas";
 
-type WorkflowsDetailProps = {
+type CanvasPageProps = {
   params: { id: string };
 };
 
-export default function WorkflowsDetail({ params }: WorkflowsDetailProps) {
+export default function CanvasPage({ params }: CanvasPageProps) {
   return (
     <Layout>
       <section className="canvas-shell">
