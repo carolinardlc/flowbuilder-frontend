@@ -51,6 +51,12 @@ export default function WorkflowsPage() {
                 >
                   Abrir
                 </Link>
+                <Link
+                  href={`/workflows/${workflow.id}/edit`}
+                  className="btn-secondary link-button"
+                >
+                  Editar
+                </Link>
               </div>
             </article>
             );
