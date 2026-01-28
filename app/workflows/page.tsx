@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import Layout from "../components/Layout";
 import { useWorkflows } from "../context/WorkflowsContext";
 
@@ -11,7 +12,11 @@ const statusStyles = {
 } as const;
 
 export default function WorkflowsPage() {
-  const { workflows } = useWorkflows();
+  const { workflows, deleteWorkflow } = useWorkflows();
+  const [workflowToDelete, setWorkflowToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   return (
     <Layout>
       <section>
@@ -57,11 +62,54 @@ export default function WorkflowsPage() {
                 >
                   Editar
                 </Link>
+                <button
+                  type="button"
+                  className="btn-secondary btn-danger"
+                  onClick={() =>
+                    setWorkflowToDelete({
+                      id: workflow.id,
+                      name: workflow.name,
+                    })
+                  }
+                >
+                  Eliminar
+                </button>
               </div>
             </article>
             );
           })}
         </div>
+
+        {workflowToDelete ? (
+          <div className="modal-overlay" role="dialog" aria-modal="true">
+            <div className="modal-card">
+              <h2 className="workflows-title">Eliminar workflow</h2>
+              <p className="workflows-subtitle">
+                ¿Estás seguro de que deseas eliminar “{workflowToDelete.name}”?
+                Esta acción no se puede deshacer.
+              </p>
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setWorkflowToDelete(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary btn-danger"
+                  onClick={() => {
+                    deleteWorkflow(workflowToDelete.id);
+                    setWorkflowToDelete(null);
+                  }}
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </section>
     </Layout>
   );

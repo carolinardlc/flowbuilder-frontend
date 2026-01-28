@@ -15,11 +15,12 @@ export default function EditWorkflowPage() {
   const params = useParams<{ id: string }>();
   const workflowId = params.id;
   const router = useRouter();
-  const { workflows, updateWorkflow } = useWorkflows();
+  const { workflows, updateWorkflow, deleteWorkflow } = useWorkflows();
   const workflow = workflows.find((item) => item.id === workflowId);
 
   const [form, setForm] = useState<FormState>({ name: "", description: "" });
   const [touched, setTouched] = useState({ name: false, description: false });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (workflow) {
@@ -131,9 +132,48 @@ export default function EditWorkflowPage() {
               <Link href="/workflows" className="btn-secondary link-button">
                 Cancelar
               </Link>
+              <button
+                type="button"
+                className="btn-secondary btn-danger"
+                onClick={() => setShowDeleteModal(true)}
+              >
+                Eliminar
+              </button>
             </div>
           </form>
         )}
+
+        {workflow && showDeleteModal ? (
+          <div className="modal-overlay" role="dialog" aria-modal="true">
+            <div className="modal-card">
+              <h2 className="workflows-title">Eliminar workflow</h2>
+              <p className="workflows-subtitle">
+                ¿Estás seguro de que deseas eliminar “{workflow.name}”? Esta acción
+                no se puede deshacer.
+              </p>
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowDeleteModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary btn-danger"
+                  onClick={() => {
+                    deleteWorkflow(workflow.id);
+                    setShowDeleteModal(false);
+                    router.push("/workflows");
+                  }}
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </section>
     </Layout>
   );

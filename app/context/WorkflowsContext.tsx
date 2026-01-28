@@ -17,6 +17,7 @@ type WorkflowsContextValue = {
   workflows: Workflow[];
   addWorkflow: (workflow: Workflow) => void;
   updateWorkflow: (workflow: Workflow) => void;
+  deleteWorkflow: (id: string) => void;
 };
 
 const WorkflowsContext = createContext<WorkflowsContextValue | undefined>(
@@ -66,6 +67,8 @@ export function WorkflowsProvider({ children }: { children: ReactNode }) {
         setWorkflows((prev) =>
           prev.map((item) => (item.id === workflow.id ? workflow : item))
         ),
+      deleteWorkflow: (id: string) =>
+        setWorkflows((prev) => prev.filter((item) => item.id !== id)),
     }),
     [workflows]
   );
