@@ -14,6 +14,9 @@ type WorkflowNodeProps = {
   node: WorkflowNodeData;
   selected: boolean;
   onSelect: (id: string) => void;
+  onMouseDown?: (e: React.MouseEvent) => void;
+  onConnectionClick?: () => void;
+  isConnectionTarget?: boolean;
   children?: ReactNode;
 };
 
@@ -28,18 +31,49 @@ export default function WorkflowNode({
   node,
   selected,
   onSelect,
+  onMouseDown,
+  onConnectionClick,
+  isConnectionTarget,
 }: WorkflowNodeProps) {
   return (
-    <button
-      type="button"
-      className={`${typeClassMap[node.type]} ${
-        selected ? "node-selected" : ""
-      }`}
-      style={{ left: node.x, top: node.y }}
-      onClick={() => onSelect(node.id)}
-    >
-      <span className="node-title">{node.title}</span>
-      <span className="node-type">{node.type}</span>
-    </button>
+    <div className="node-wrapper">
+      <button
+        type="button"
+        className={`${typeClassMap[node.type]} ${
+          selected ? "node-selected" : ""
+        } ${isConnectionTarget ? "node-connection-target" : ""}`}
+        style={{
+          left: node.x,
+          top: node.y,
+          cursor: onMouseDown ? "grab" : "pointer",
+        }}
+        onClick={() => {
+          if (onConnectionClick) {
+            onConnectionClick();
+          } else {
+            onSelect(node.id);
+          }
+        }}
+        onMouseDown={onMouseDown}
+      >
+        <span className="node-title">{node.title}</span>
+        <span className="node-type">{node.type}</span>
+      </button>
+      {isConnectionTarget && (
+        <div
+          className="connection-hint"
+          style={{
+            position: "absolute",
+            left: node.x + 85,
+            top: node.y + 15,
+            fontSize: "10px",
+            color: "#9e8bff",
+            pointerEvents: "none",
+          }}
+        >
+          📍
+        </div>
+      )}
+    </div>
   );
 }
