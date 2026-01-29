@@ -1,0 +1,22 @@
+/**
+ * Estilos específicos para React Flow Handles - Versión Minimalista
+ */
+
+/* Solo estilos básicos para handles */
+.react-flow__handle {
+  /* Dejar que React Flow maneje todo por defecto */
+}
+
+/* Solo colores para distinguir tipos */
+.react-flow__handle.source {
+  background: #10b981 !important; /* Verde para handles de salida */
+}
+
+.react-flow__handle.target {
+  background: #f59e0b !important; /* Naranja para handles de entrada */
+}
+
+/* Sin estilos adicionales para evitar conflictos */
+.react-flow__node {
+  /* Sin estilos forzados */
+}

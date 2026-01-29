@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Layout from "../../components/Layout";
-import WorkflowCanvas from "./_components/WorkflowCanvas";
+import ReactFlowCanvas from "./canvas/ReactFlowCanvas_FINAL"; // Versión final limpia y estable
 
 type WorkflowsDetailProps = {
   params: { id: string };
@@ -10,7 +10,7 @@ export default function WorkflowsDetail({ params }: WorkflowsDetailProps) {
   return (
     <Layout>
       <section className="canvas-shell">
-        <WorkflowCanvas
+        <ReactFlowCanvas
           workflowId={params.id}
           actions={
             <>

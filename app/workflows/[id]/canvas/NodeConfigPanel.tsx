@@ -8,6 +8,7 @@ type NodeConfigPanelProps = {
   node: WorkflowNodeData | null;
   onClose: () => void;
   onSave: (config: NodeConfig) => void;
+  onDelete?: (nodeId: string) => void; // Callback para eliminar nodo
   isOpen: boolean;
 };
 
@@ -21,6 +22,7 @@ export default function NodeConfigPanel({
   node,
   onClose,
   onSave,
+  onDelete,
   isOpen,
 }: NodeConfigPanelProps) {
   const [config, setConfig] = useState<NodeConfig>(() => ({
@@ -77,6 +79,14 @@ export default function NodeConfigPanel({
     onSave(config);
     // onClose se llama automáticamente desde el padre en handleSaveConfig
   }, [config, onSave]);
+
+  const handleDelete = useCallback(() => {
+    if (node && onDelete) {
+      console.log("Eliminando nodo:", node.id);
+      onDelete(node.id);
+      onClose(); // Cerrar panel después de eliminar
+    }
+  }, [node, onDelete, onClose]);
 
   if (!isOpen || !node) return null;
 
@@ -219,6 +229,69 @@ export default function NodeConfigPanel({
             </div>
           )}
         </div>
+
+        {/* Sección de eliminación - Separada visualmente */}
+        {onDelete && (
+          <div
+            style={{
+              padding: "16px 24px",
+              borderTop: "1px solid #e5e7eb",
+              backgroundColor: "#fef2f2",
+              margin: "0 24px",
+              borderRadius: "8px",
+              marginTop: "16px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div>
+                <h4
+                  style={{
+                    margin: "0 0 4px 0",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    color: "#dc2626",
+                  }}
+                >
+                  ⚠️ Zona de Peligro
+                </h4>
+                <p style={{ margin: 0, fontSize: "12px", color: "#7f1d1d" }}>
+                  Esta acción eliminará permanentemente el nodo y todas sus
+                  conexiones
+                </p>
+              </div>
+              <button
+                onClick={handleDelete}
+                style={{
+                  backgroundColor: "#dc2626",
+                  color: "white",
+                  border: "none",
+                  padding: "8px 16px",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  fontWeight: "500",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#b91c1c";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#dc2626";
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                🗑️ Eliminar Nodo
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="config-panel-footer">
           <button className="btn-secondary" onClick={onClose}>
