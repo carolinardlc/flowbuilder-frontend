@@ -1,23 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { type WorkflowNodeData, type WorkflowNodeType } from "./WorkflowNode";
-
-type NodeConfig = {
-  id: string;
-  title: string;
-  type: WorkflowNodeType;
-  config: {
-    welcomeMessage?: string;
-    actionType?: "http_request" | "send_email" | "database_query" | "webhook";
-    url?: string;
-    method?: "GET" | "POST" | "PUT" | "DELETE";
-    body?: string;
-    conditionType?: "if_else" | "switch" | "filter";
-    outputType?: "success" | "error" | "notification";
-    message?: string;
-  };
-};
+import { getNodeTypeBadgeClass } from "./constants/nodeTypes";
+import type { WorkflowNodeData, WorkflowNodeType, NodeConfig } from "./types";
 
 type NodeConfigPanelProps = {
   node: WorkflowNodeData | null;
@@ -26,6 +11,12 @@ type NodeConfigPanelProps = {
   isOpen: boolean;
 };
 
+/**
+ * Panel de configuración para nodos de workflow
+ *
+ * Proporciona una interfaz para configurar las propiedades específicas
+ * de cada tipo de nodo según sus necesidades.
+ */
 export default function NodeConfigPanel({
   node,
   onClose,
@@ -39,6 +30,7 @@ export default function NodeConfigPanel({
     config: node?.config || {},
   }));
 
+  // Resetear config cuando cambia el nodo
   useEffect(() => {
     if (node) {
       const newConfig = {
@@ -93,7 +85,7 @@ export default function NodeConfigPanel({
       <div className="config-panel">
         <div className="config-panel-header">
           <div className="config-panel-title">
-            <span className={`node-type-badge node-${node.type.toLowerCase()}`}>
+            <span className={getNodeTypeBadgeClass(node.type)}>
               {node.type}
             </span>
             <h3>Configurar Nodo</h3>
