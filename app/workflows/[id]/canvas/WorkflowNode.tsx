@@ -8,6 +8,16 @@ export type WorkflowNodeData = {
   type: WorkflowNodeType;
   x: number;
   y: number;
+  config?: {
+    welcomeMessage?: string;
+    actionType?: "http_request" | "send_email" | "database_query" | "webhook";
+    url?: string;
+    method?: "GET" | "POST" | "PUT" | "DELETE";
+    body?: string;
+    conditionType?: "if_else" | "switch" | "filter";
+    outputType?: "success" | "error" | "notification";
+    message?: string;
+  };
 };
 
 type WorkflowNodeProps = {

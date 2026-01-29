@@ -7,6 +7,7 @@ import WorkflowNode, {
   type WorkflowNodeData,
   type WorkflowNodeType,
 } from "./WorkflowNode";
+import NodeConfigPanel from "./NodeConfigPanel";
 
 type CanvasProps = {
   workflowId: string;
@@ -31,6 +32,7 @@ type DragState = {
 
 export default function Canvas({ workflowId, actions }: CanvasProps) {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
 
   // ✅ VACÍO por defecto
   const [nodes, setNodes] = useState<WorkflowNodeData[]>([]);
@@ -53,9 +55,41 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
 
   // ✅ Key segura por workflowId (evita "undefined")
   const safeWorkflowId = String(workflowId ?? "").trim();
-  const storageKey = safeWorkflowId ? `workflow-canvas:${safeWorkflowId}` : null;
+  const storageKey = safeWorkflowId
+    ? `workflow-canvas:${safeWorkflowId}`
+    : null;
 
   const selectedNode = nodes.find((node) => node.id === selectedNodeId) ?? null;
+
+  // Manejadores del panel de configuración
+  const handleOpenConfig = useCallback(() => {
+    if (selectedNode) {
+      setIsConfigPanelOpen(true);
+    }
+  }, [selectedNode]);
+
+  const handleCloseConfig = useCallback(() => {
+    setIsConfigPanelOpen(false);
+  }, []);
+
+  const handleSaveConfig = useCallback((config: any) => {
+    console.log("Canvas: Recibiendo configuración para guardar:", config);
+    setNodes((prev) => {
+      const updatedNodes = prev.map((node) =>
+        node.id === config.id
+          ? {
+              ...node,
+              title: config.title,
+              // Guardar la configuración adicional en el nodo
+              config: config.config,
+            }
+          : node,
+      );
+      console.log("Canvas: Nodos actualizados:", updatedNodes);
+      return updatedNodes;
+    });
+    setIsConfigPanelOpen(false);
+  }, []);
 
   // =========================
   // ✅ CARGAR desde localStorage
@@ -304,28 +338,34 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
         <h3 className="panel-title">Arrastrar nodos</h3>
 
         <div className="node-palette">
-          {(["START", "ACTION", "CONDITIONAL", "END"] as WorkflowNodeType[]).map(
-            (nodeType) => (
-              <div
-                key={nodeType}
-                className={`draggable-node node node-${nodeType.toLowerCase()}`}
-                onMouseDown={() => handleNodeTypeDragStart(nodeType)}
-                style={{ cursor: "grab", marginBottom: "8px" }}
-              >
-                <span className="node-title">{nodeType}</span>
-              </div>
-            ),
-          )}
+          {(
+            ["START", "ACTION", "CONDITIONAL", "END"] as WorkflowNodeType[]
+          ).map((nodeType) => (
+            <div
+              key={nodeType}
+              className={`draggable-node node node-${nodeType.toLowerCase()}`}
+              onMouseDown={() => handleNodeTypeDragStart(nodeType)}
+              style={{ cursor: "grab", marginBottom: "8px" }}
+            >
+              <span className="node-title">{nodeType}</span>
+            </div>
+          ))}
         </div>
 
         <div className="panel-section" style={{ marginTop: "20px" }}>
           <h4 className="panel-title">Instrucciones</h4>
-          <ul className="panel-list" style={{ fontSize: "12px", lineHeight: 1.4 }}>
+          <ul
+            className="panel-list"
+            style={{ fontSize: "12px", lineHeight: 1.4 }}
+          >
             <li>Arrastra nodos del panel al canvas</li>
             <li>Click en nodos para seleccionar</li>
             <li>Arrastra nodos para mover</li>
             <li>Click en "Eliminar" para borrar</li>
-            <li>Para conectar: “Conectar desde aquí” y luego click en el nodo destino</li>
+            <li>
+              Para conectar: “Conectar desde aquí” y luego click en el nodo
+              destino
+            </li>
           </ul>
         </div>
       </aside>
@@ -474,6 +514,13 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
               >
                 Conectar desde aquí
               </button>
+              <button
+                className="btn-secondary"
+                style={{ marginTop: "8px", width: "100%", fontSize: "12px" }}
+                onClick={handleOpenConfig}
+              >
+                ⚙️ Configurar Nodo
+              </button>
             </div>
 
             <button
@@ -488,6 +535,14 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
           <p className="panel-empty">Selecciona un nodo para ver detalles.</p>
         )}
       </aside>
+
+      {/* Panel de Configuración */}
+      <NodeConfigPanel
+        node={selectedNode}
+        isOpen={isConfigPanelOpen}
+        onClose={handleCloseConfig}
+        onSave={handleSaveConfig}
+      />
     </div>
   );
 }

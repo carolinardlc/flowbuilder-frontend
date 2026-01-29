@@ -5,12 +5,16 @@ type WorkflowsDetailProps = {
   params: { id: string };
 };
 
-export default function WorkflowsDetail({ params }: WorkflowsDetailProps) {
+export default async function WorkflowsDetail({
+  params,
+}: WorkflowsDetailProps) {
+  const { id } = await params;
+
   return (
     <Layout>
       <section className="hero">
         <div>
-          <p className="hero-kicker">Workflows / {params.id}</p>
+          <p className="hero-kicker">Workflows / {id}</p>
           <h1 className="workflows-title">Detalle de workflow</h1>
           <p className="workflows-subtitle">
             Aqui ira el canvas del workflow. (Placeholder)
@@ -23,10 +27,7 @@ export default function WorkflowsDetail({ params }: WorkflowsDetailProps) {
             Este espacio mostrara pasos, tareas y conexiones del flujo.
           </p>
           <div className="workflow-actions">
-            <Link
-              href={`/workflows/${params.id}`}
-              className="btn-primary link-button"
-            >
+            <Link href={`/workflows/${id}`} className="btn-primary link-button">
               Volver al canvas
             </Link>
           </div>
