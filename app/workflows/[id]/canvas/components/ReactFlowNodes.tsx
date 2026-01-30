@@ -1,12 +1,20 @@
+// nodes/ReactFlowNodes.tsx
+"use client";
+
 /**
- * Componentes de nodos personalizados para React Flow
+ * Componentes de nodos personalizados para @xyflow/react
+ * usando tu constants/NODE_TYPES como source of truth.
  */
 
 import { Handle, Position } from "@xyflow/react";
-import type { WorkflowFlowNode } from "../types/reactFlow";
 import { NODE_TYPES } from "../constants/nodeTypes";
 
-// Estilos inline para los nodos - MEJORADOS
+export type WorkflowFlowNodeData = {
+  title: string;
+  workflowType: "START" | "ACTION" | "CONDITIONAL" | "END";
+  config?: Record<string, any>;
+};
+
 const nodeStyles = {
   padding: "12px 20px",
   borderRadius: "12px",
@@ -14,7 +22,7 @@ const nodeStyles = {
   minWidth: "160px",
   maxWidth: "200px",
   minHeight: "60px",
-  maxHeight: "80px", // Altura máxima para evitar estiramiento
+  maxHeight: "80px",
   textAlign: "center" as const,
   fontSize: "14px",
   fontWeight: "bold",
@@ -26,12 +34,10 @@ const nodeStyles = {
   justifyContent: "center" as const,
   alignItems: "center" as const,
   gap: "4px",
-  // Prevenir estiramiento en zoom
   flexShrink: 0,
-  aspectRatio: "2/1", // Proporción fija
+  aspectRatio: "2/1",
 };
 
-// Estilos para handles (puntos de conexión) - MÍNIMOS
 const handleStyles = {
   width: "12px",
   height: "12px",
@@ -39,19 +45,8 @@ const handleStyles = {
   borderRadius: "50%",
 };
 
-// Estilos para handles hover
-const handleHoverStyles = {
-  transform: "scale(1.3)",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.7)",
-};
-
-/**
- * Nodo START para React Flow
- */
-export function StartNode({ data }: { data: WorkflowFlowNode["data"] }) {
+export function StartNode({ data }: { data: WorkflowFlowNodeData }) {
   const nodeType = NODE_TYPES.START;
-
-  console.log("🚀 Renderizando StartNode con data:", data);
 
   return (
     <div
@@ -60,21 +55,14 @@ export function StartNode({ data }: { data: WorkflowFlowNode["data"] }) {
         borderColor: nodeType.color,
         backgroundColor: nodeType.bgColor,
         color: "#047857",
-        position: "relative", // Importante para handles
+        position: "relative",
       }}
     >
-      {/* Handle de salida - Handle REAL de React Flow */}
       <Handle
         type="source"
         position={Position.Right}
         id="output"
-        style={{
-          ...handleStyles,
-          background: nodeType.color,
-          opacity: 1,
-          cursor: "crosshair",
-        }}
-        title="Punto de conexión de salida"
+        style={{ ...handleStyles, background: nodeType.color, opacity: 1 }}
       />
 
       <div>
@@ -90,10 +78,7 @@ export function StartNode({ data }: { data: WorkflowFlowNode["data"] }) {
   );
 }
 
-/**
- * Nodo ACTION para React Flow
- */
-export function ActionNode({ data }: { data: WorkflowFlowNode["data"] }) {
+export function ActionNode({ data }: { data: WorkflowFlowNodeData }) {
   const nodeType = NODE_TYPES.ACTION;
 
   return (
@@ -105,32 +90,18 @@ export function ActionNode({ data }: { data: WorkflowFlowNode["data"] }) {
         color: "#dc2626",
       }}
     >
-      {/* Handle de entrada - puede recibir conexiones */}
       <Handle
         type="target"
         position={Position.Left}
         id="input"
-        style={{
-          ...handleStyles,
-          background: nodeType.color,
-          opacity: 1,
-          cursor: "crosshair",
-        }}
-        title="Punto de conexión de entrada"
+        style={{ ...handleStyles, background: nodeType.color, opacity: 1 }}
       />
 
-      {/* Handle de salida - puede enviar conexiones */}
       <Handle
         type="source"
         position={Position.Right}
         id="output"
-        style={{
-          ...handleStyles,
-          background: nodeType.color,
-          opacity: 1,
-          cursor: "crosshair",
-        }}
-        title="Punto de conexión de salida"
+        style={{ ...handleStyles, background: nodeType.color, opacity: 1 }}
       />
 
       <div>
@@ -142,10 +113,8 @@ export function ActionNode({ data }: { data: WorkflowFlowNode["data"] }) {
           {nodeType.label}
         </div>
         {data.config?.actionType && (
-          <div
-            style={{ fontSize: "9px", marginTop: "4px", fontStyle: "italic" }}
-          >
-            {data.config.actionType}
+          <div style={{ fontSize: "9px", marginTop: "4px", fontStyle: "italic" }}>
+            {String(data.config.actionType)}
           </div>
         )}
       </div>
@@ -153,10 +122,7 @@ export function ActionNode({ data }: { data: WorkflowFlowNode["data"] }) {
   );
 }
 
-/**
- * Nodo CONDITIONAL para React Flow
- */
-export function ConditionalNode({ data }: { data: WorkflowFlowNode["data"] }) {
+export function ConditionalNode({ data }: { data: WorkflowFlowNodeData }) {
   const nodeType = NODE_TYPES.CONDITIONAL;
 
   return (
@@ -166,7 +132,6 @@ export function ConditionalNode({ data }: { data: WorkflowFlowNode["data"] }) {
         borderColor: nodeType.color,
         backgroundColor: nodeType.bgColor,
         color: "#6366f1",
-        // Forma rectangular como los demás nodos
         width: "160px",
         height: "80px",
         display: "flex",
@@ -174,43 +139,27 @@ export function ConditionalNode({ data }: { data: WorkflowFlowNode["data"] }) {
         justifyContent: "center",
       }}
     >
-      {/* Handle de entrada */}
       <Handle
         type="target"
         position={Position.Left}
         id="input"
-        style={{
-          ...handleStyles,
-          background: nodeType.color,
-          opacity: 1,
-          cursor: "crosshair",
-        }}
+        style={{ ...handleStyles, background: nodeType.color, opacity: 1 }}
       />
 
-      {/* Handle de salida verdadero */}
       <Handle
         type="source"
         position={Position.Right}
         id="true"
-        style={{
-          ...handleStyles,
-          background: "#10b981",
-          opacity: 1,
-          cursor: "crosshair",
-        }}
+        style={{ ...handleStyles, background: "#10b981", opacity: 1 }}
+        title="TRUE"
       />
 
-      {/* Handle de salida falso */}
       <Handle
         type="source"
         position={Position.Bottom}
         id="false"
-        style={{
-          ...handleStyles,
-          background: "#ef4444",
-          opacity: 1,
-          cursor: "crosshair",
-        }}
+        style={{ ...handleStyles, background: "#ef4444", opacity: 1 }}
+        title="FALSE"
       />
 
       <div style={{ textAlign: "center" }}>
@@ -224,10 +173,7 @@ export function ConditionalNode({ data }: { data: WorkflowFlowNode["data"] }) {
   );
 }
 
-/**
- * Nodo END para React Flow
- */
-export function EndNode({ data }: { data: WorkflowFlowNode["data"] }) {
+export function EndNode({ data }: { data: WorkflowFlowNodeData }) {
   const nodeType = NODE_TYPES.END;
 
   return (
@@ -239,16 +185,11 @@ export function EndNode({ data }: { data: WorkflowFlowNode["data"] }) {
         color: "#6b7280",
       }}
     >
-      {/* Handle de entrada - solo puede recibir conexiones */}
       <Handle
         type="target"
         position={Position.Left}
         id="input"
-        style={{
-          ...handleStyles,
-          background: nodeType.color,
-          left: "-8px", // Moverlo fuera del nodo
-        }}
+        style={{ ...handleStyles, background: nodeType.color, opacity: 1, left: "-8px" }}
       />
 
       <div>
@@ -260,10 +201,8 @@ export function EndNode({ data }: { data: WorkflowFlowNode["data"] }) {
           {nodeType.label}
         </div>
         {data.config?.outputType && (
-          <div
-            style={{ fontSize: "9px", marginTop: "4px", fontStyle: "italic" }}
-          >
-            {data.config.outputType}
+          <div style={{ fontSize: "9px", marginTop: "4px", fontStyle: "italic" }}>
+            {String(data.config.outputType)}
           </div>
         )}
       </div>
@@ -271,10 +210,9 @@ export function EndNode({ data }: { data: WorkflowFlowNode["data"] }) {
   );
 }
 
-// Tipos de nodos para React Flow
 export const nodeTypes = {
   start: StartNode,
   action: ActionNode,
   conditional: ConditionalNode,
   end: EndNode,
-};
+} as const;

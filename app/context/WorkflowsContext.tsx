@@ -1,22 +1,32 @@
+// WorkflowsContext.tsx
 "use client";
 
 import type { ReactNode } from "react";
 import { createContext, useContext, useMemo, useState } from "react";
+import type { Node, Edge } from "@xyflow/react";
 
-type WorkflowStatus = "ACTIVE" | "IN_PROGRESS" | "DONE";
+
+export type WorkflowStatus = "DRAFT" | "VALID" | "INVALID";
 
 export type Workflow = {
   id: string;
   name: string;
   description: string;
   status: WorkflowStatus;
-  date: string;
+  nodes: Node[];
+  edges: Edge[];
 };
 
 type WorkflowsContextValue = {
   workflows: Workflow[];
-  addWorkflow: (workflow: Workflow) => void;
-  updateWorkflow: (workflow: Workflow) => void;
+
+  addWorkflow: (input: { name: string; description: string }) => Workflow;
+  updateWorkflowMeta: (
+    id: string,
+    patch: Partial<Pick<Workflow, "name" | "description" | "status">>
+  ) => void;
+  updateWorkflowGraph: (id: string, nodes: Node[], edges: Edge[]) => void;
+
   deleteWorkflow: (id: string) => void;
 };
 
@@ -24,51 +34,83 @@ const WorkflowsContext = createContext<WorkflowsContextValue | undefined>(
   undefined
 );
 
-const initialWorkflows: Workflow[] = [
-  {
-    id: "1",
-    name: "Onboarding suave",
-    description: "Checklist inicial, accesos y guias rapidas para nuevos equipos.",
-    date: "12 Mar 2025",
-    status: "ACTIVE",
-  },
-  {
-    id: "2",
-    name: "Revision creativa",
-    description: "Rondas de feedback visual para campañas retro.",
-    date: "28 Feb 2025",
-    status: "IN_PROGRESS",
-  },
-  {
-    id: "3",
-    name: "Entrega de proyectos",
-    description: "Pasos finales, aprobaciones y archivos listos.",
-    date: "05 Ene 2025",
-    status: "DONE",
-  },
-  {
-    id: "4",
-    name: "Sprint de producto",
-    description: "Backlog, sesiones diarias y demo semanal.",
-    date: "18 Dic 2024",
-    status: "ACTIVE",
-  },
-];
+function makeId() {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+
+function makeStartNode(workflowId: string): Node {
+  return {
+    id: `start-${workflowId}`,
+    type: "start", // ✅ ahora sí usa tu StartNode (nodeTypes.start)
+    position: { x: 120, y: 120 },
+    data: {
+      title: "START", // ✅ tu StartNode lee data.title
+      // opcional: puedes guardar el workflowId en data si te sirve
+      workflowId,
+      config: {},
+    },
+  };
+}
+
+/** ✅ Arranca VACÍO */
+const initialWorkflows: Workflow[] = [];
 
 export function WorkflowsProvider({ children }: { children: ReactNode }) {
   const [workflows, setWorkflows] = useState<Workflow[]>(initialWorkflows);
 
-  const value = useMemo(
+  const value = useMemo<WorkflowsContextValue>(
     () => ({
       workflows,
-      addWorkflow: (workflow: Workflow) =>
-        setWorkflows((prev) => [workflow, ...prev]),
-      updateWorkflow: (workflow: Workflow) =>
+
+      addWorkflow: ({ name, description }) => {
+        const id = makeId();
+        const wf: Workflow = {
+          id,
+          name,
+          description,
+          status: "DRAFT",
+          nodes: [makeStartNode(id)],
+          edges: [],
+        };
+        setWorkflows((prev) => [wf, ...prev]);
+        return wf;
+      },
+
+      updateWorkflowMeta: (id, patch) => {
         setWorkflows((prev) =>
-          prev.map((item) => (item.id === workflow.id ? workflow : item))
-        ),
-      deleteWorkflow: (id: string) =>
-        setWorkflows((prev) => prev.filter((item) => item.id !== id)),
+          prev.map((w) => {
+            if (w.id !== id) return w;
+
+            // si cambias meta, lo volvemos DRAFT (simple y seguro)
+            const touchedMeta = Boolean(patch.name || patch.description);
+            return {
+              ...w,
+              ...patch,
+              status: patch.status ?? (touchedMeta ? "DRAFT" : w.status),
+            };
+          })
+        );
+      },
+
+      updateWorkflowGraph: (id, nodes, edges) => {
+        setWorkflows((prev) =>
+          prev.map((w) =>
+            w.id === id
+              ? {
+                  ...w,
+                  nodes,
+                  edges,
+                  status: "DRAFT",
+                }
+              : w
+          )
+        );
+      },
+
+      deleteWorkflow: (id) => {
+        setWorkflows((prev) => prev.filter((w) => w.id !== id));
+      },
     }),
     [workflows]
   );
