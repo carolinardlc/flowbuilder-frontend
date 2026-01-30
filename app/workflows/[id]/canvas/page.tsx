@@ -8,7 +8,7 @@ type CanvasPageProps = {
 
 export default function CanvasPage({ params }: CanvasPageProps) {
   return (
-    <Layout>
+    <Layout fullWidth>
       <section className="canvas-shell">
         <WorkflowCanvas
           workflowId={params.id}

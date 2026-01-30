@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { getNodeClass } from "./constants/nodeTypes";
 import type { WorkflowNodeData, WorkflowNodeType } from "./types";
 
@@ -9,7 +8,9 @@ type WorkflowNodeProps = {
   onMouseDown?: (e: React.MouseEvent) => void;
   onConnectionClick?: () => void;
   isConnectionTarget?: boolean;
-  children?: ReactNode;
+  onStartConnection?: (id: string) => void;
+  onCompleteConnection?: (id: string) => void;
+  isConnectionSource?: boolean;
 };
 
 /**
@@ -25,7 +26,29 @@ export default function WorkflowNode({
   onMouseDown,
   onConnectionClick,
   isConnectionTarget,
+  onStartConnection,
+  onCompleteConnection,
+  isConnectionSource,
 }: WorkflowNodeProps) {
+  const handleStartConnection = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onStartConnection?.(node.id);
+  };
+
+  const handleCompleteConnection = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onCompleteConnection?.(node.id);
+  };
+
+  const buttonClasses = [
+    getNodeClass(node.type),
+    selected ? "node-selected" : "",
+    isConnectionTarget ? "node-connection-target" : "",
+    isConnectionSource ? "node-connection-source" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div
       className="node-wrapper"
@@ -33,9 +56,7 @@ export default function WorkflowNode({
     >
       <button
         type="button"
-        className={`node node-${node.type.toLowerCase()} ${
-          selected ? "node-selected" : ""
-        } ${isConnectionTarget ? "node-connection-target" : ""}`}
+        className={buttonClasses}
         onClick={() =>
           onConnectionClick ? onConnectionClick() : onSelect(node.id)
         }
@@ -50,6 +71,16 @@ export default function WorkflowNode({
         <span className="node-title">{node.title}</span>
         <span className="node-type">{node.type}</span>
       </button>
+      <div
+        className="node-handle node-handle-in"
+        onMouseUp={handleCompleteConnection}
+        title="Soltar conexión aquí"
+      />
+      <div
+        className="node-handle node-handle-out"
+        onMouseDown={handleStartConnection}
+        title="Arrastrar para conectar"
+      />
       {isConnectionTarget && (
         <div
           className="connection-hint"

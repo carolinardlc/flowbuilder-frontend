@@ -23,12 +23,6 @@ export default function WorkflowConnection({
   `;
 
   return (
-   <path
-  d={path}
-  className="fill-none stroke-current stroke-2"
-  strokeDasharray="6,4"
-  markerEnd="url(#arrowhead)"
-/>
-
+    <path d={path} className="connection-path" markerEnd="url(#arrowhead)" />
   );
 }

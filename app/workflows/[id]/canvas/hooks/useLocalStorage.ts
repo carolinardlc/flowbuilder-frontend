@@ -58,7 +58,13 @@ export function useLocalStorage({
     } catch (err) {
       console.error("Error loading canvas from localStorage:", err);
     }
-  }, [storageKey]); // Eliminar funciones de dependencias para evitar bucle infinito
+  }, [
+    storageKey,
+    onNodesLoaded,
+    onConnectionsLoaded,
+    onNodeIdCounterUpdate,
+    onSetNextNodeId,
+  ]);
 
   // Guardar datos en localStorage
   useEffect(() => {

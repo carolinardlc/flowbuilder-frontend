@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { getNodeTypeBadgeClass } from "./constants/nodeTypes";
-import type { WorkflowNodeData, WorkflowNodeType, NodeConfig } from "./types";
+import type { WorkflowNodeData, NodeConfig } from "./types";
 
 type NodeConfigPanelProps = {
   node: WorkflowNodeData | null;
@@ -31,9 +31,9 @@ export default function NodeConfigPanel({
   }));
 
   // Resetear config cuando cambia el nodo
-  useEffect(() => {
+useEffect(() => {
     if (node) {
-      const newConfig = {
+      const newConfig: NodeConfig = {
         id: node.id,
         title: node.title,
         type: node.type,
@@ -43,32 +43,48 @@ export default function NodeConfigPanel({
         "NodeConfigPanel: Cargando configuración del nodo:",
         newConfig,
       );
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setConfig(newConfig);
     }
   }, [node]);
 
-  const updateConfig = useCallback((field: string, value: any) => {
-    setConfig((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  }, []);
+  const updateConfig = useCallback(
+    <K extends keyof NodeConfig>(field: K, value: NodeConfig[K]) => {
+      setConfig((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    },
+    [],
+  );
 
-  const updateNestedConfig = useCallback((path: string, value: any) => {
+  const updateNestedConfig = useCallback((path: string, value: string) => {
     setConfig((prev) => {
       const keys = path.split(".");
-      const newConfig = { ...prev };
-      let current: any = newConfig.config;
+      const nextConfig = { ...(prev.config ?? {}) } as Record<
+        string,
+        unknown
+      >;
+
+      let current: Record<string, unknown> = nextConfig;
 
       for (let i = 0; i < keys.length - 1; i++) {
-        if (!current[keys[i]]) {
-          current[keys[i]] = {};
+        const key = keys[i];
+        const existing = current[key];
+
+        if (typeof existing !== "object" || existing === null) {
+          current[key] = {};
         }
-        current = current[keys[i]];
+
+        current = current[key] as Record<string, unknown>;
       }
 
       current[keys[keys.length - 1]] = value;
-      return newConfig;
+
+      return {
+        ...prev,
+        config: nextConfig,
+      };
     });
   }, []);
 
