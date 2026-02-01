@@ -75,9 +75,22 @@ export function useLocalStorage({
     if (!isHydrated) return;
 
     try {
-      localStorage.setItem(storageKey, JSON.stringify({ nodes, connections }));
+      const payload = { nodes, connections };
+      localStorage.setItem(storageKey, JSON.stringify(payload));
+
+      const apiBase =
+        process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "";
+      const url = `${apiBase}/api/workflows/${workflowId}/canvas`;
+
+      void fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
     } catch (err) {
       console.error("Error saving canvas to localStorage:", err);
     }
-  }, [storageKey, nodes, connections, isHydrated]);
+  }, [storageKey, nodes, connections, isHydrated, workflowId]);
 }
