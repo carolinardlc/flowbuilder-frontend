@@ -3,10 +3,11 @@
  */
 
 export const STORAGE_KEYS = {
-  WORKFLOW_CANVAS: (workflowId: string): string => 
-    `workflow-canvas:${String(workflowId ?? "").trim()}`
+  WORKFLOW_CANVAS: (workflowId: string): string => {
+    const id = String(workflowId ?? "").trim();
+    return id ? `workflow-canvas:${id}` : "";
+  },
 } as const;
-
 export const DEFAULT_DRAG_STATE = {
   isDragging: false,
   draggedNode: null,
