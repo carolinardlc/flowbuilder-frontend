@@ -226,10 +226,17 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
               position: "relative",
               width: canvasSize.width,
               height: canvasSize.height,
+              minWidth: CANVAS_CONFIG.MIN_CANVAS_WIDTH,
+              minHeight: CANVAS_CONFIG.MIN_CANVAS_HEIGHT,
             }}
           >
             {/* SVG para conexiones */}
-            <svg className="canvas-connections">
+            <svg
+              className="canvas-connections"
+              width={canvasSize.width}
+              height={canvasSize.height}
+              viewBox={`0 0 ${canvasSize.width} ${canvasSize.height}`}
+            >
               <defs>
                 <marker
                   id="arrowhead"

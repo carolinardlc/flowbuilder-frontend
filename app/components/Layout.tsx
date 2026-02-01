@@ -11,9 +11,11 @@ export default function Layout({ children, fullWidth = false }: LayoutProps) {
     <div className="app-shell">
       <Header />
       <main className={`app-main ${fullWidth ? "app-main--wide" : ""}`}>
-        <section className={`app-card ${fullWidth ? "app-card--wide" : ""}`}>
-          {children}
-        </section>
+        {fullWidth ? (
+          <div className="app-full-bleed">{children}</div>
+        ) : (
+          <section className="app-card">{children}</section>
+        )}
       </main>
     </div>
   );
