@@ -567,7 +567,7 @@ body {
 }
 
 .node {
-  position: absolute;
+  position: relative;
   width: 180px;
   padding: 0.85rem 1rem;
   border-radius: 1.2rem;
@@ -601,6 +601,7 @@ body {
   align-items: center;
   justify-content: center;
   cursor: crosshair;
+  z-index: 5;
   transition:
     transform 140ms ease,
     box-shadow 160ms ease,
@@ -608,12 +609,12 @@ body {
 }
 
 .node-handle-in {
-  left: -10px;
+  left: -7px;
   border-color: #c7c7d2;
 }
 
 .node-handle-out {
-  right: -10px;
+  right: -7px;
   background: #9e8bff;
   border-color: #9e8bff;
   box-shadow: 0 0 0 2px rgba(158, 139, 255, 0.3);
