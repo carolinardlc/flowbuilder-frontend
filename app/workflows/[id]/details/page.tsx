@@ -2,7 +2,7 @@ import Link from "next/link";
 import Layout from "../../../components/Layout";
 
 type WorkflowsDetailProps = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 export default async function WorkflowsDetail({

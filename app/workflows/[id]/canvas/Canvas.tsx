@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import type { ReactNode } from "react";
+import { useState, useCallback } from "react";
 import WorkflowConnection from "./WorkflowConnection";
 import WorkflowNode from "./WorkflowNode";
 import NodeConfigPanel from "./NodeConfigPanel";
-import { NODE_TYPE_ARRAY } from "./constants/nodeTypes";
+import { NODE_TYPES, NODE_TYPE_ARRAY } from "./constants/nodeTypes";
 import { CANVAS_CONFIG } from "./constants/storage";
 import { useCanvasState } from "./hooks/useCanvasState";
 import { useLocalStorage } from "./hooks/useLocalStorage";
@@ -22,10 +23,6 @@ import type { CanvasProps } from "./types";
 export default function Canvas({ workflowId, actions }: CanvasProps) {
   // Estado local para el contador de IDs
   const [nextNodeId, setNextNodeId] = useState(1);
-  const [canvasSize, setCanvasSize] = useState(() => ({
-    width: CANVAS_CONFIG.BASE_CANVAS_WIDTH,
-    height: CANVAS_CONFIG.BASE_CANVAS_HEIGHT,
-  }));
 
   // Estado principal del canvas
   const {
@@ -47,21 +44,21 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
 
   // Funciones memorizadas para localStorage
   const handleNodesLoaded = useCallback(
-    (loadedNodes: typeof nodes) => {
-      setNodes(loadedNodes);
+    (nodes: any[]) => {
+      setNodes(nodes);
     },
     [setNodes],
   );
 
   const handleConnectionsLoaded = useCallback(
-    (loadedConnections: typeof connections) => {
-      setConnections(loadedConnections);
+    (connections: any[]) => {
+      setConnections(connections);
     },
     [setConnections],
   );
 
   const handleNodeIdCounterUpdate = useCallback((counter: number) => {
-    setNextNodeId(counter);
+    // Actualizar el contador de nodos
   }, []);
 
   const handleSetNextNodeId = useCallback((id: number) => {
@@ -105,28 +102,6 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     onConnectionsChange: setConnections,
     onDragStateChange: setDragState,
   });
-
-  // Dimensiones responsivas del canvas (80% del viewport con mÃ­nimos seguros)
-  useEffect(() => {
-    const updateCanvasSize = () => {
-      if (typeof window === "undefined") return;
-
-      const width = Math.max(
-        CANVAS_CONFIG.MIN_CANVAS_WIDTH,
-        Math.round(window.innerWidth * CANVAS_CONFIG.CANVAS_WIDTH_RATIO),
-      );
-      const height = Math.max(
-        CANVAS_CONFIG.MIN_CANVAS_HEIGHT,
-        Math.round(window.innerHeight * CANVAS_CONFIG.CANVAS_HEIGHT_RATIO),
-      );
-
-      setCanvasSize({ width, height });
-    };
-
-    updateCanvasSize();
-    window.addEventListener("resize", updateCanvasSize);
-    return () => window.removeEventListener("resize", updateCanvasSize);
-  }, []);
 
   // Manejo personalizado del mouse up para crear nodos
   const handleCanvasMouseUpWithNodeCreation = (e: React.MouseEvent) => {
@@ -178,10 +153,10 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
             <li>Arrastra nodos del panel al canvas</li>
             <li>Click en nodos para seleccionar</li>
             <li>Arrastra nodos para mover</li>
-            <li>Click en el botón Eliminar para borrar</li>
+            <li>Click en "Eliminar" para borrar</li>
             <li>
-              Para conectar: arrastra el punto de salida morado hacia el punto
-              de entrada gris del nodo destino
+              Para conectar: "Conectar desde aquí" y luego click en el nodo
+              destino
             </li>
           </ul>
         </div>
@@ -220,16 +195,9 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                 : "default",
           }}
         >
-          <div
-            className="canvas-grid"
-            style={{
-              position: "relative",
-              width: canvasSize.width,
-              height: canvasSize.height,
-            }}
-          >
+          <div className="canvas-grid" style={{ position: "relative" }}>
             {/* SVG para conexiones */}
-            <svg className="canvas-connections">
+            <svg className="canvas-connections" viewBox="0 0 1600 800">
               <defs>
                 <marker
                   id="arrowhead"
@@ -256,10 +224,10 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                   }
                   x2={dragState.tempConnection.x}
                   y2={dragState.tempConnection.y}
-                  stroke="#7c3aed"
-                  strokeWidth="3"
-                  strokeDasharray="6,4"
-                  opacity="0.8"
+                  stroke="#9e8bff"
+                  strokeWidth="2"
+                  strokeDasharray="5,5"
+                  opacity="0.6"
                 />
               )}
 
@@ -306,17 +274,10 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                     ? () => handleCompleteConnection(node.id, dragState)
                     : undefined
                 }
-                onStartConnection={() => handleStartConnection(node.id)}
-                onCompleteConnection={
-                  dragState.isConnecting
-                    ? () => handleCompleteConnection(node.id, dragState)
-                    : undefined
-                }
                 isConnectionTarget={
                   dragState.isConnecting &&
                   dragState.connectionStart !== node.id
                 }
-                isConnectionSource={dragState.connectionStart === node.id}
               />
             ))}
           </div>

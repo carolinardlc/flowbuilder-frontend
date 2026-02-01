@@ -4,7 +4,7 @@
 
 import { useCallback, useRef } from 'react';
 import type { WorkflowNodeData, WorkflowNodeType, DragState } from '../types';
-import { DEFAULT_DRAG_STATE, CANVAS_CONFIG } from '../constants/storage';
+import { DEFAULT_DRAG_STATE } from '../constants/storage';
 
 interface UseDragAndDropProps {
   nodes: WorkflowNodeData[];
@@ -20,7 +20,6 @@ export function useDragAndDrop({
   onDragStateChange
 }: UseDragAndDropProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
-  const nodeIdCounter = useRef(1);
 
   // Iniciar arrastre de un nodo existente
   const handleNodeMouseDown = useCallback(
@@ -88,36 +87,15 @@ export function useDragAndDrop({
 
   // Manejar liberación del mouse
   const handleCanvasMouseUp = useCallback(
-    (e: React.MouseEvent, dragState: DragState) => {
-      const nodeType = dragState.newNodeType;
-
-      // Crear nuevo nodo si venía de la paleta
-      if (nodeType && canvasRef.current) {
-        const canvasRect = canvasRef.current.getBoundingClientRect();
-        const x = e.clientX - canvasRect.left - CANVAS_CONFIG.NODE_WIDTH / 2;
-        const y = e.clientY - canvasRect.top - CANVAS_CONFIG.NODE_HEIGHT / 2;
-
-        const newNode: WorkflowNodeData = {
-          id: `node-${nodeIdCounter.current++}`,
-          title: `Nuevo ${nodeType}`,
-          type: nodeType,
-          x: Math.max(0, x),
-          y: Math.max(0, y),
-        };
-
-        onNodesChange([...nodes, newNode]);
-        onNodeSelect(newNode.id);
-      }
-
-      // Resetear estado de drag
+    (_e: React.MouseEvent, _dragState: DragState) => {
+      // Resetear estado de drag (la creacion de nodos se maneja en Canvas)
       onDragStateChange(DEFAULT_DRAG_STATE);
     },
-    [nodes, onNodesChange, onNodeSelect, onDragStateChange],
+    [onDragStateChange],
   );
 
   return {
     canvasRef,
-    nodeIdCounter,
     handleNodeMouseDown,
     handleNodeTypeDragStart,
     handleCanvasMouseMove,
