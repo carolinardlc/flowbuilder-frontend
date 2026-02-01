@@ -11,7 +11,7 @@ export default async function WorkflowsDetail({
 }: WorkflowsDetailProps) {
   const { id } = await params;
   return (
-    <Layout>
+    <Layout fullWidth>
       <section className="canvas-shell">
         <WorkflowCanvas
           workflowId={id}

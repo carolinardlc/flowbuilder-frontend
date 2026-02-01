@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Layout from "../../../components/Layout";
+import WorkflowDetailsCanvas from "./_components/WorkflowDetailsCanvas";
 
 type WorkflowsDetailProps = {
   params: Promise<{ id: string }>;
@@ -11,26 +12,22 @@ export default async function WorkflowsDetail({
   const { id } = await params;
 
   return (
-    <Layout>
+    <Layout fullWidth>
       <section className="hero">
         <div>
           <p className="hero-kicker">Workflows / {id}</p>
           <h1 className="workflows-title">Detalle de workflow</h1>
           <p className="workflows-subtitle">
-            Aqui ira el canvas del workflow. (Placeholder)
+            Vista de solo lectura con resumen y conexiones del flujo.
           </p>
         </div>
 
-        <div className="workflow-card">
-          <h2 className="feature-title">Canvas en construccion</h2>
-          <p className="feature-text">
-            Este espacio mostrara pasos, tareas y conexiones del flujo.
-          </p>
-          <div className="workflow-actions">
-            <Link href={`/workflows/${id}`} className="btn-primary link-button">
-              Volver al canvas
-            </Link>
-          </div>
+        <WorkflowDetailsCanvas workflowId={id} />
+
+        <div className="workflow-actions">
+          <Link href={`/workflows/${id}`} className="btn-primary link-button">
+            Volver al canvas
+          </Link>
         </div>
       </section>
     </Layout>
