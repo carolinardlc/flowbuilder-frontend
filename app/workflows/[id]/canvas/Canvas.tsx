@@ -169,22 +169,6 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
             </div>
           ))}
         </div>
-        <div className="panel-section" style={{ marginTop: "20px" }}>
-          <h4 className="panel-title">Instrucciones</h4>
-          <ul
-            className="panel-list"
-            style={{ fontSize: "12px", lineHeight: 1.4 }}
-          >
-            <li>Arrastra nodos del panel al canvas</li>
-            <li>Click en nodos para seleccionar</li>
-            <li>Arrastra nodos para mover</li>
-            <li>Click en el botón Eliminar para borrar</li>
-            <li>
-              Para conectar: arrastra el punto de salida morado hacia el punto
-              de entrada gris del nodo destino
-            </li>
-          </ul>
-        </div>
       </aside>
 
       {/* Canvas principal */}
