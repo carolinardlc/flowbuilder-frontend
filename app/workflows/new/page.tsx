@@ -30,11 +30,13 @@ export default function NewWorkflowPage() {
   }, []);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const workflowId = Date.now().toString();
     event.preventDefault();
     setTouched({ name: true, description: true });
     if (!isFormValid) {
       return;
     }
+    
 
     addWorkflow({
       id: Date.now().toString(),
@@ -44,7 +46,8 @@ export default function NewWorkflowPage() {
       date: formattedDate,
     });
 
-    router.push("/workflows");
+    router.push(`/workflows/${workflowId}`);
+
   };
 
   return (

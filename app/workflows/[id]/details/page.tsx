@@ -5,10 +5,10 @@ type WorkflowsDetailProps = {
   params: { id: string };
 };
 
-export default async function WorkflowsDetail({
+export default function WorkflowsDetail({
   params,
 }: WorkflowsDetailProps) {
-  const { id } = await params;
+  const { id } = params;
 
   return (
     <Layout>
