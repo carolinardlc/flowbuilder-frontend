@@ -165,7 +165,9 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
               onMouseDown={() => handleNodeTypeDragStart(nodeType.type)}
               style={{ cursor: "grab", marginBottom: "8px" }}
             >
-              <span className="node-title">{nodeType.label}</span>
+              <span className="node-title" style={{ fontSize: "0.9rem" }}>
+                {nodeType.label}
+              </span>
             </div>
           ))}
         </div>

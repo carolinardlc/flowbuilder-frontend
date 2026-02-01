@@ -417,11 +417,12 @@ body {
 .canvas-layout {
   display: grid;
   grid-template-columns:
-    minmax(70px, 0.025fr)
-    minmax(0, 0.95fr)
-    minmax(120px, 0.025fr);
+    minmax(120px, 0.06fr)
+    minmax(0, 0.88fr)
+    minmax(120px, 0.06fr);
   gap: 0.1rem;
   align-items: stretch;
+  align-content: start;
   height: calc(100vh - 3rem);
 }
 
@@ -432,6 +433,8 @@ body {
   border: 1px solid rgba(74, 74, 74, 0.08);
   box-shadow: 0 10px 22px rgba(74, 74, 74, 0.08);
   height: fit-content;
+  align-self: start;
+  margin-top: 6rem;
 }
 
 .canvas-panel-right {
@@ -441,7 +444,7 @@ body {
 
 .panel-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 700;
 }
 
@@ -645,13 +648,18 @@ body {
 
 .draggable-node {
   position: relative;
-  width: 65px;
-  padding: 0.25rem;
+  width: 100px;
+  padding: 0.45rem;
   border-radius: 1rem;
   border: 2px dashed rgba(74, 74, 74, 0.3);
   background: rgba(255, 255, 255, 0.8);
   transition: all 200ms ease;
   user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 }
 
 .draggable-node:hover {
