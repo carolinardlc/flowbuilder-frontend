@@ -2,41 +2,41 @@
  * Constantes para tipos de nodos del workflow
  */
 
-import type { WorkflowNodeType } from '../types';
+import type { WorkflowNodeType } from "../types";
 
 export const NODE_TYPES = {
   START: {
-    type: 'START' as WorkflowNodeType,
-    color: '#62c9a9',
-    bgColor: 'rgba(98, 201, 169, 0.2)',
-    icon: '🚀',
-    label: 'Inicio',
-    description: 'Punto de inicio del workflow'
+    type: "START" as WorkflowNodeType,
+    color: "#62c9a9",
+    bgColor: "rgba(98, 201, 169, 0.2)",
+    icon: "🚀",
+    label: "Inicio",
+    description: "Punto de inicio del workflow",
   },
   ACTION: {
-    type: 'ACTION' as WorkflowNodeType,
-    color: '#f5b6a5',
-    bgColor: 'rgba(245, 182, 165, 0.25)',
-    icon: '⚡',
-    label: 'Acción',
-    description: 'Ejecuta una acción específica'
+    type: "ACTION" as WorkflowNodeType,
+    color: "#f5b6a5",
+    bgColor: "rgba(245, 182, 165, 0.25)",
+    icon: "⚡",
+    label: "Acción",
+    description: "Ejecuta una acción específica",
   },
   CONDITIONAL: {
-    type: 'CONDITIONAL' as WorkflowNodeType,
-    color: '#9e8bff',
-    bgColor: 'rgba(158, 139, 255, 0.2)',
-    icon: '🔀',
-    label: 'Condicional',
-    description: 'Evalúa condiciones y bifurca el flujo'
+    type: "CONDITIONAL" as WorkflowNodeType,
+    color: "#9e8bff",
+    bgColor: "rgba(158, 139, 255, 0.2)",
+    icon: "🔀",
+    label: "Condicional",
+    description: "Evalúa condiciones y bifurca el flujo",
   },
   END: {
-    type: 'END' as WorkflowNodeType,
-    color: '#d4d4d4',
-    bgColor: 'rgba(212, 212, 212, 0.6)',
-    icon: '🏁',
-    label: 'Fin',
-    description: 'Punto final del workflow'
-  }
+    type: "END" as WorkflowNodeType,
+    color: "#d4d4d4",
+    bgColor: "rgba(212, 212, 212, 0.6)",
+    icon: "🏁",
+    label: "Fin",
+    description: "Punto final del workflow",
+  },
 } as const;
 
 export const NODE_TYPE_ARRAY = Object.values(NODE_TYPES);

@@ -3,8 +3,8 @@
  */
 
 export const STORAGE_KEYS = {
-  WORKFLOW_CANVAS: (workflowId: string): string => 
-    `workflow-canvas:${String(workflowId ?? "").trim()}`
+  WORKFLOW_CANVAS: (workflowId: string): string =>
+    `workflow-canvas:${String(workflowId ?? "").trim()}`,
 } as const;
 
 export const DEFAULT_DRAG_STATE = {
@@ -23,10 +23,10 @@ export const CANVAS_CONFIG = {
   GRID_SIZE: 28,
   BASE_CANVAS_WIDTH: 1600,
   BASE_CANVAS_HEIGHT: 800,
-  CANVAS_WIDTH_RATIO: 0.9,
-  CANVAS_HEIGHT_RATIO: 0.82,
-  MIN_CANVAS_WIDTH: 1200,
-  MIN_CANVAS_HEIGHT: 800,
+  CANVAS_WIDTH_RATIO: 0.8,
+  CANVAS_HEIGHT_RATIO: 0.8,
+  MIN_CANVAS_WIDTH: 960,
+  MIN_CANVAS_HEIGHT: 600,
   CONNECTION_OFFSET_X: 180,
   CONNECTION_OFFSET_Y: 40,
 } as const;
