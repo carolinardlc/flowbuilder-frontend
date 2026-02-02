@@ -2,9 +2,9 @@
  * Hook personalizado para manejar drag and drop de nodos
  */
 
-import { useCallback, useRef } from 'react';
-import type { WorkflowNodeData, WorkflowNodeType, DragState } from '../types';
-import { DEFAULT_DRAG_STATE } from '../constants/storage';
+import { useCallback, useRef } from "react";
+import type { WorkflowNodeData, WorkflowNodeType, DragState } from "../types";
+import { DEFAULT_DRAG_STATE } from "../constants/storage";
 
 interface UseDragAndDropProps {
   nodes: WorkflowNodeData[];
@@ -17,7 +17,7 @@ export function useDragAndDrop({
   nodes,
   onNodesChange,
   onNodeSelect,
-  onDragStateChange
+  onDragStateChange,
 }: UseDragAndDropProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -28,7 +28,7 @@ export function useDragAndDrop({
       if (!node) return;
 
       const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      
+
       onDragStateChange({
         ...DEFAULT_DRAG_STATE,
         isDragging: true,
@@ -45,13 +45,16 @@ export function useDragAndDrop({
   );
 
   // Iniciar arrastre desde paleta de nodos
-  const handleNodeTypeDragStart = useCallback((nodeType: WorkflowNodeType) => {
-    onDragStateChange({
-      ...DEFAULT_DRAG_STATE,
-      isDragging: true,
-      newNodeType: nodeType,
-    });
-  }, [onDragStateChange]);
+  const handleNodeTypeDragStart = useCallback(
+    (nodeType: WorkflowNodeType) => {
+      onDragStateChange({
+        ...DEFAULT_DRAG_STATE,
+        isDragging: true,
+        newNodeType: nodeType,
+      });
+    },
+    [onDragStateChange],
+  );
 
   // Manejar movimiento del mouse
   const handleCanvasMouseMove = useCallback(
@@ -87,7 +90,11 @@ export function useDragAndDrop({
 
   // Manejar liberación del mouse
   const handleCanvasMouseUp = useCallback(
-    (_e: React.MouseEvent, _dragState: DragState) => {
+    (_e: React.MouseEvent, dragState: DragState) => {
+      if (dragState.isConnecting) {
+        return;
+      }
+
       // Resetear estado de drag (la creacion de nodos se maneja en Canvas)
       onDragStateChange(DEFAULT_DRAG_STATE);
     },

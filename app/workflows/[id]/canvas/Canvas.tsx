@@ -181,9 +181,16 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                 : "default",
           }}
         >
-          <div className="canvas-grid" style={{ position: "relative" }}>
+          <div
+            className="canvas-grid"
+            style={{
+              position: "relative",
+              width: CANVAS_CONFIG.BASE_CANVAS_WIDTH,
+              height: CANVAS_CONFIG.BASE_CANVAS_HEIGHT,
+            }}
+          >
             {/* SVG para conexiones */}
-            <svg className="canvas-connections" viewBox="0 0 1600 800">
+            <svg className="canvas-connections">
               <defs>
                 <marker
                   id="arrowhead"
@@ -260,10 +267,15 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                     ? () => handleCompleteConnection(node.id, dragState)
                     : undefined
                 }
+                onStartConnection={() => handleStartConnection(node.id)}
+                onCompleteConnection={() =>
+                  handleCompleteConnection(node.id, dragState)
+                }
                 isConnectionTarget={
                   dragState.isConnecting &&
                   dragState.connectionStart !== node.id
                 }
+                isConnectionSource={dragState.connectionStart === node.id}
               />
             ))}
           </div>
