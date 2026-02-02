@@ -2,7 +2,7 @@
  * Hook personalizado para manejar persistencia en localStorage
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { WorkflowNodeData, Connection } from "../types";
 import { STORAGE_KEYS } from "../constants/storage";
 
@@ -26,6 +26,7 @@ export function useLocalStorage({
   onSetNextNodeId,
 }: UseLocalStorageProps) {
   const storageKey = STORAGE_KEYS.WORKFLOW_CANVAS(workflowId);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   // Cargar datos desde localStorage
   useEffect(() => {
@@ -57,6 +58,8 @@ export function useLocalStorage({
       onSetNextNodeId(maxNum + 1);
     } catch (err) {
       console.error("Error loading canvas from localStorage:", err);
+    } finally {
+      setIsHydrated(true);
     }
   }, [
     storageKey,
@@ -69,11 +72,25 @@ export function useLocalStorage({
   // Guardar datos en localStorage
   useEffect(() => {
     if (!storageKey) return;
+    if (!isHydrated) return;
 
     try {
-      localStorage.setItem(storageKey, JSON.stringify({ nodes, connections }));
+      const payload = { nodes, connections };
+      localStorage.setItem(storageKey, JSON.stringify(payload));
+
+      const apiBase =
+        process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "";
+      const url = `${apiBase}/api/workflows/${workflowId}/canvas`;
+
+      void fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
     } catch (err) {
       console.error("Error saving canvas to localStorage:", err);
     }
-  }, [storageKey, nodes, connections]);
+  }, [storageKey, nodes, connections, isHydrated, workflowId]);
 }

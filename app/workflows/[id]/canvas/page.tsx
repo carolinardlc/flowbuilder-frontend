@@ -3,19 +3,20 @@ import Layout from "../../../components/Layout";
 import WorkflowCanvas from "../_components/WorkflowCanvas";
 
 type CanvasPageProps = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
-export default function CanvasPage({ params }: CanvasPageProps) {
+export default async function CanvasPage({ params }: CanvasPageProps) {
+  const { id } = await params;
   return (
     <Layout fullWidth>
       <section className="canvas-shell">
         <WorkflowCanvas
-          workflowId={params.id}
+          workflowId={id}
           actions={
             <>
               <Link
-                href={`/workflows/${params.id}/details`}
+                href={`/workflows/${id}/details`}
                 className="btn-secondary link-button"
               >
                 Detalles
