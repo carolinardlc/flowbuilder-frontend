@@ -1,51 +1,72 @@
 "use client";
 
-// This custom node renders a destination-styled card with handles and inline actions.
-// It mirrors the reference UX (duplicate/delete) without introducing new dependencies.
+/**
+ * CustomNode - ReactFlow custom node component for workflow builder
+ *
+ * This component renders a destination-styled card with:
+ * - Connection handles (input at top, output at bottom)
+ * - Node title and type display
+ * - Configuration status badge
+ * - Inline actions (duplicate/delete) for non-START nodes
+ * - TRUE/FALSE output indicators for conditional nodes
+ *
+ * Follows the light theme palette from the destination design.
+ */
 
+import { memo } from "react";
 import type { NodeProps } from "reactflow";
 import { Handle, Position } from "reactflow";
 import type { CanvasNodeData } from "./canvas-types";
 
-export default function CustomNode({
-  id,
-  data,
-  selected,
-}: NodeProps<CanvasNodeData>) {
+/**
+ * CustomNode component for rendering workflow nodes in ReactFlow
+ * Memoized to prevent unnecessary re-renders during canvas interactions
+ */
+function CustomNode({ id, data, selected }: NodeProps<CanvasNodeData>) {
+  // Determine node type for conditional rendering
   const isStartNode = data.nodeType === "START";
   const isConditional = data.nodeType === "CONDITIONAL";
 
   return (
     <div
-      className={`rf-node rf-node-${data.nodeType.toLowerCase()} ${
-        selected ? "rf-node-selected" : ""
-      }`}
+      className={`rf-node rf-node-${data.nodeType.toLowerCase()} ${selected ? "rf-node-selected" : ""
+        }`}
     >
-      {/* The top handle is hidden for START nodes to prevent incoming edges. */}
-      {!isStartNode ? (
+      {/* Input handle - Hidden for START nodes as they cannot receive connections */}
+      {!isStartNode && (
         <Handle
           type="target"
           position={Position.Top}
           className="rf-handle rf-handle-in"
         />
-      ) : null}
+      )}
 
+      {/* Node header with title and type badge */}
       <div className="rf-node-header">
         <div className="rf-node-title">{data.label}</div>
         <div className="rf-node-type">{data.nodeType}</div>
       </div>
 
+      {/* Node footer with status and actions */}
       <div className="rf-node-footer">
+        {/* Configuration status badge */}
         <span
-          className={`rf-node-badge ${
-            data.isConfigured ? "rf-node-badge--ok" : "rf-node-badge--warn"
-          }`}
+          className={`rf-node-badge ${data.isConfigured ? "rf-node-badge--ok" : "rf-node-badge--warn"
+            }`}
         >
           {data.isConfigured ? "Configurado" : "Sin configurar"}
         </span>
 
-        {/* Inline actions keep the UX close to the reference without a dropdown. */}
-        {!isStartNode ? (
+        {/* TRUE/FALSE output indicators for conditional nodes */}
+        {isConditional && (
+          <div className="rf-node-branches">
+            <span className="rf-branch rf-branch--true">TRUE</span>
+            <span className="rf-branch rf-branch--false">FALSE</span>
+          </div>
+        )}
+
+        {/* Inline actions - Only for non-START nodes */}
+        {!isStartNode && (
           <div className="rf-node-actions">
             <button
               type="button"
@@ -62,10 +83,10 @@ export default function CustomNode({
               Eliminar
             </button>
           </div>
-        ) : null}
+        )}
       </div>
 
-      {/* Conditional nodes expose two outputs for TRUE/FALSE branching. */}
+      {/* Output handles - Conditional nodes have TRUE/FALSE, others have single output */}
       {isConditional ? (
         <>
           <Handle
@@ -73,14 +94,14 @@ export default function CustomNode({
             id="true"
             position={Position.Bottom}
             className="rf-handle rf-handle-true"
-            style={{ left: "35%" }}
+            style={{ left: "30%" }}
           />
           <Handle
             type="source"
             id="false"
             position={Position.Bottom}
             className="rf-handle rf-handle-false"
-            style={{ left: "65%" }}
+            style={{ left: "70%" }}
           />
         </>
       ) : (
@@ -93,3 +114,6 @@ export default function CustomNode({
     </div>
   );
 }
+
+// Memoize to prevent unnecessary re-renders during drag operations
+export default memo(CustomNode);

@@ -242,7 +242,7 @@ function validateNodeConfiguration(node: WorkflowNode): ValidationIssue[] {
     return issues;
   }
 
-  const config = node.data.config as Record<string, unknown>;
+  const config = node.data.config as unknown as Record<string, unknown>;
 
   if (node.type === "HTTP_REQUEST") {
     if (!config.url) {
