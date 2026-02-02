@@ -140,25 +140,11 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
               onMouseDown={() => handleNodeTypeDragStart(nodeType.type)}
               style={{ cursor: "grab", marginBottom: "8px" }}
             >
-              <span className="node-title">{nodeType.label}</span>
+              <span className="node-title" style={{ fontSize: "0.9rem" }}>
+                {nodeType.label}
+              </span>
             </div>
           ))}
-        </div>
-        <div className="panel-section" style={{ marginTop: "20px" }}>
-          <h4 className="panel-title">Instrucciones</h4>
-          <ul
-            className="panel-list"
-            style={{ fontSize: "12px", lineHeight: 1.4 }}
-          >
-            <li>Arrastra nodos del panel al canvas</li>
-            <li>Click en nodos para seleccionar</li>
-            <li>Arrastra nodos para mover</li>
-            <li>Click en "Eliminar" para borrar</li>
-            <li>
-              Para conectar: "Conectar desde aquí" y luego click en el nodo
-              destino
-            </li>
-          </ul>
         </div>
       </aside>
 
@@ -195,9 +181,16 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                 : "default",
           }}
         >
-          <div className="canvas-grid" style={{ position: "relative" }}>
+          <div
+            className="canvas-grid"
+            style={{
+              position: "relative",
+              width: CANVAS_CONFIG.BASE_CANVAS_WIDTH,
+              height: CANVAS_CONFIG.BASE_CANVAS_HEIGHT,
+            }}
+          >
             {/* SVG para conexiones */}
-            <svg className="canvas-connections" viewBox="0 0 1600 800">
+            <svg className="canvas-connections">
               <defs>
                 <marker
                   id="arrowhead"
@@ -274,10 +267,15 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                     ? () => handleCompleteConnection(node.id, dragState)
                     : undefined
                 }
+                onStartConnection={() => handleStartConnection(node.id)}
+                onCompleteConnection={() =>
+                  handleCompleteConnection(node.id, dragState)
+                }
                 isConnectionTarget={
                   dragState.isConnecting &&
                   dragState.connectionStart !== node.id
                 }
+                isConnectionSource={dragState.connectionStart === node.id}
               />
             ))}
           </div>
