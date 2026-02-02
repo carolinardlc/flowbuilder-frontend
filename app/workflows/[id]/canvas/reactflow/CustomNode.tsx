@@ -5,22 +5,13 @@
 
 import type { NodeProps } from "reactflow";
 import { Handle, Position } from "reactflow";
-import type { NodeType } from "./types";
-
-// The node data shape extends the workflow contract with UI-only callbacks.
-export type CustomNodeData = {
-  label: string;
-  nodeType: NodeType;
-  isConfigured: boolean;
-  onDelete: (nodeId: string) => void;
-  onDuplicate: (nodeId: string) => void;
-};
+import type { CanvasNodeData } from "./canvas-types";
 
 export default function CustomNode({
   id,
   data,
   selected,
-}: NodeProps<CustomNodeData>) {
+}: NodeProps<CanvasNodeData>) {
   const isStartNode = data.nodeType === "START";
   const isConditional = data.nodeType === "CONDITIONAL";
 
