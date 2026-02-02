@@ -1,22 +1,40 @@
 ﻿"use client";
 
-// This canvas brings together layout, core ReactFlow interactions, and persistence.
-// It keeps styling aligned with the destination theme while matching reference UX.
+/**
+ * ReactFlowCanvas - Main workflow builder canvas component
+ *
+ * This canvas brings together layout, core ReactFlow interactions, and persistence.
+ * It keeps styling aligned with the destination theme while matching reference UX.
+ *
+ * Key features:
+ * - 3-panel layout: catalog | canvas | inspector
+ * - Drag and drop nodes from catalog to canvas
+ * - Interactive node connections with ReactFlow
+ * - Auto-save with status indicator
+ * - Import/Export workflow JSON
+ * - Validation panel with error/warning feedback
+ */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import ReactFlow, {
   addEdge,
   Background,
+  BackgroundVariant,
   type Connection,
   Controls,
   type Edge,
   MiniMap,
   type Node,
+  ReactFlowProvider,
   type ReactFlowInstance,
   useEdgesState,
   useNodesState,
 } from "reactflow";
+
+// CRITICAL: Import ReactFlow base styles - without this, nodes won't render correctly
+import "reactflow/dist/style.css";
+
 import CustomNode from "./CustomNode";
 import type { CanvasNodeData } from "./canvas-types";
 import NodeCatalog from "./NodeCatalog";
@@ -46,8 +64,13 @@ const initialEdges: Edge[] = [];
 // Storage key prefix isolates the new ReactFlow canvas from the legacy one.
 const STORAGE_PREFIX = "workflow-reactflow";
 
-// The component now wires layout plus core interactions; advanced panels come later.
-export default function ReactFlowCanvas() {
+/**
+ * Inner canvas component that contains all ReactFlow logic.
+ * This is wrapped by ReactFlowProvider in the exported component.
+ */
+function ReactFlowCanvasInner() {
+  // Reference to the ReactFlow wrapper for drag-drop positioning
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
   // Route params give us the workflow identifier for storage and metadata.
   const params = useParams<{ id: string }>();
   const routeWorkflowId =
@@ -274,8 +297,8 @@ export default function ReactFlowCanvas() {
         id: edge.id,
         source: edge.source,
         target: edge.target,
-        label: edge.label,
-        type: edge.type,
+        label: typeof edge.label === "string" ? edge.label : undefined,
+        type: edge.type as WorkflowEdge["type"],
       }));
 
       return {
@@ -498,6 +521,9 @@ export default function ReactFlowCanvas() {
           if (!label) return prev;
           if (outgoing.some((edge) => edge.label === label)) return prev;
 
+          // Ensure source and target are not null before creating edge
+          if (!connection.source || !connection.target) return prev;
+
           const conditionalEdge: Edge = {
             id: generateId(),
             source: connection.source,
@@ -509,6 +535,9 @@ export default function ReactFlowCanvas() {
 
           return [...prev, conditionalEdge];
         }
+
+        // Standard single-output node: create normal edge
+        if (!connection.source || !connection.target) return prev;
 
         const newEdge: Edge = {
           id: generateId(),
@@ -541,6 +570,54 @@ export default function ReactFlowCanvas() {
     setValidationReport(report);
     setShowValidation(true);
   }, [buildWorkflowPayload]);
+
+  /**
+   * Handles drag over event for the canvas area.
+   * Required to enable drop functionality.
+   */
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  }, []);
+
+  /**
+   * Handles drop event when a node is dragged from the catalog onto the canvas.
+   * Creates a new node at the drop position.
+   */
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+
+      // Get the node type from the drag data
+      const nodeType = event.dataTransfer.getData("application/reactflow") as NodeType;
+      if (!nodeType) return;
+
+      // Prevent adding multiple START nodes
+      if (nodeType === "START" && hasStartNode) return;
+
+      // Calculate drop position relative to the ReactFlow canvas
+      if (!reactFlowWrapper.current || !reactFlowInstance) return;
+
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      const position = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
+
+      // Create and add the new node
+      const id = generateId();
+      const newNode: Node<ReactFlowNodeData> = {
+        id,
+        type: "custom",
+        position,
+        data: buildNodeData(nodeType),
+      };
+
+      setNodes((prev) => [...prev, newNode]);
+      setSelectedNodeId(id);
+    },
+    [buildNodeData, hasStartNode, reactFlowInstance, setNodes]
+  );
 
   // Focus a node from the validation panel using ReactFlow's viewport API.
   const handleFocusNode = useCallback(
@@ -610,8 +687,13 @@ export default function ReactFlowCanvas() {
             </div>
           </div>
 
-          {/* Canvas container keeps the existing destination look & feel. */}
-          <div className="canvas-scroll rf-canvas-scroll">
+          {/* Canvas container with drag-drop support and ref for positioning */}
+          <div
+            className="canvas-scroll rf-canvas-scroll"
+            ref={reactFlowWrapper}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+          >
             <ReactFlow
               // The canvas now renders the nodes created from the catalog.
               nodes={nodes}
@@ -632,7 +714,7 @@ export default function ReactFlowCanvas() {
             >
               {/* Dotted background uses destination CSS variables for color. */}
               <Background
-                variant="dots"
+                variant={BackgroundVariant.Dots}
                 gap={20}
                 size={1}
                 color="var(--rf-grid)"
@@ -706,5 +788,17 @@ export default function ReactFlowCanvas() {
         />
       ) : null}
     </section>
+  );
+}
+
+/**
+ * Main export component that wraps ReactFlowCanvasInner with ReactFlowProvider.
+ * This provider is required for ReactFlow hooks to function correctly.
+ */
+export default function ReactFlowCanvas() {
+  return (
+    <ReactFlowProvider>
+      <ReactFlowCanvasInner />
+    </ReactFlowProvider>
   );
 }

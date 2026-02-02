@@ -105,6 +105,12 @@ export default function NodeCatalog({
             type="button"
             className="rf-catalog-card"
             onClick={() => handleAddNode(item)}
+            draggable
+            onDragStart={(event) => {
+              // Set the node type in dataTransfer for the canvas drop handler
+              event.dataTransfer.setData("application/reactflow", item.type);
+              event.dataTransfer.effectAllowed = "move";
+            }}
           >
             <div className="rf-catalog-icon" aria-hidden="true">
               {item.icon}

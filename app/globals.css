@@ -412,19 +412,22 @@ body {
   width: 100%;
   max-width: 100vw;
   padding: 0 0.5rem;
+  /* Ensure shell fills available height for ReactFlow */
+  height: calc(100vh - 6rem);
+  min-height: 600px;
 }
 
 .canvas-layout {
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr) 240px;
+  grid-template-columns: 220px minmax(0, 1fr) 280px;
   gap: 1rem;
   align-items: stretch;
-  align-content: start;
-  height: calc(100vh - 3rem);
+  /* Fill the entire canvas shell height */
+  height: 100%;
 }
 
 .canvas-panel {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.85);
   border-radius: 1.25rem;
   padding: 1.25rem;
   border: 1px solid rgba(74, 74, 74, 0.08);
@@ -515,6 +518,36 @@ body {
   --rf-control-bg: rgba(255, 255, 255, 0.95);
   --rf-control-border: rgba(74, 74, 74, 0.12);
   --rf-minimap-bg: rgba(255, 255, 255, 0.9);
+}
+
+/**
+ * CRITICAL: ReactFlow requires explicit height on its container.
+ * Without this, the canvas will collapse to 0 height and nodes won't render.
+ */
+.rf-canvas-scroll {
+  position: relative;
+  height: 100%;
+  min-height: 500px;
+  flex: 1;
+}
+
+/* Ensure ReactFlow fills its container completely */
+.rf-canvas-scroll .react-flow {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Canvas stage needs to be a flex container with full height */
+.rf-canvas-stage {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
 }
 
 /* Ensure panels align to the top and stretch with the canvas area. */
@@ -747,6 +780,31 @@ body {
 
 .rf-node-action--danger {
   border-color: rgba(217, 108, 108, 0.5);
+  color: #c45757;
+}
+
+/* TRUE/FALSE branch indicators for conditional nodes */
+.rf-node-branches {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.rf-branch {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.rf-branch--true {
+  background: rgba(98, 201, 169, 0.25);
+  color: #3a9a7d;
+}
+
+.rf-branch--false {
+  background: rgba(245, 182, 165, 0.3);
   color: #c45757;
 }
 
@@ -1157,10 +1215,8 @@ body {
   height: 100%;
   min-width: 80rem;
   min-height: 38rem;
-  background-image: radial-gradient(
-    rgba(74, 74, 74, 0.18) 1px,
-    transparent 1px
-  );
+  background-image: radial-gradient(rgba(74, 74, 74, 0.18) 1px,
+      transparent 1px);
   background-size: 28px 28px;
 }
 
@@ -1288,11 +1344,13 @@ body {
 }
 
 @keyframes pulse {
+
   0%,
   100% {
     outline-color: #9e8bff;
     box-shadow: 0 0 0 0 rgba(158, 139, 255, 0.4);
   }
+
   50% {
     outline-color: #f5b6a5;
     box-shadow: 0 0 0 8px rgba(158, 139, 255, 0);
