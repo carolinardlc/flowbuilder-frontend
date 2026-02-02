@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import Canvas from "../canvas/Canvas";
+import ReactFlowCanvas from "../canvas/reactflow/ReactFlowCanvas";
 
 type WorkflowCanvasProps = {
   workflowId: string;
@@ -10,5 +10,7 @@ export default function WorkflowCanvas({
   workflowId,
   actions,
 }: WorkflowCanvasProps) {
-  return <Canvas workflowId={workflowId} actions={actions} />;
+  // The ReactFlow canvas now replaces the legacy canvas implementation.
+  // Props are kept for compatibility with existing callers.
+  return <ReactFlowCanvas />;
 }

@@ -4,7 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import WorkflowConnection from "../../canvas/WorkflowConnection";
 import WorkflowNode from "../../canvas/WorkflowNode";
 import { STORAGE_KEYS } from "../../canvas/constants/storage";
-import type { Connection, WorkflowNodeData, WorkflowNodeType } from "../../canvas/types";
+import type {
+  Connection,
+  WorkflowNodeData,
+  WorkflowNodeType,
+} from "../../canvas/types";
+import type { Workflow, WorkflowNode as ReactFlowNode } from "../../canvas/reactflow/types";
 
 type WorkflowDetailsCanvasProps = {
   workflowId: string;
@@ -16,6 +21,7 @@ type CanvasSnapshot = {
 };
 
 const EMPTY_SNAPSHOT: CanvasSnapshot = { nodes: [], connections: [] };
+const REACTFLOW_STORAGE_PREFIX = "workflow-reactflow";
 
 const NODE_TYPE_LABELS: Record<WorkflowNodeType, string> = {
   START: "Inicio",
@@ -31,18 +37,44 @@ export default function WorkflowDetailsCanvas({
 
   useEffect(() => {
     const storageKey = STORAGE_KEYS.WORKFLOW_CANVAS(workflowId);
-    if (!storageKey) return;
+    const reactflowKey = `${REACTFLOW_STORAGE_PREFIX}:${workflowId}`;
 
     try {
+      // Prefer the new ReactFlow storage if present.
+      const reactflowRaw = localStorage.getItem(reactflowKey);
+      if (reactflowRaw) {
+        const parsed = JSON.parse(reactflowRaw) as Workflow;
+        const mappedNodes = Array.isArray(parsed.nodes)
+          ? parsed.nodes.map((node) => mapReactFlowNode(node))
+          : [];
+        const mappedConnections = Array.isArray(parsed.edges)
+          ? parsed.edges.map((edge) => ({
+              id: edge.id,
+              from: edge.source,
+              to: edge.target,
+            }))
+          : [];
+
+        setSnapshot({
+          nodes: mappedNodes,
+          connections: mappedConnections,
+        });
+        return;
+      }
+
+      // Fallback to legacy canvas storage if ReactFlow data is missing.
+      if (!storageKey) return;
       const raw = localStorage.getItem(storageKey);
       if (!raw) {
         setSnapshot(EMPTY_SNAPSHOT);
         return;
       }
-      const parsed = JSON.parse(raw) as Partial<CanvasSnapshot>;
+      const parsedLegacy = JSON.parse(raw) as Partial<CanvasSnapshot>;
       setSnapshot({
-        nodes: Array.isArray(parsed.nodes) ? parsed.nodes : [],
-        connections: Array.isArray(parsed.connections) ? parsed.connections : [],
+        nodes: Array.isArray(parsedLegacy.nodes) ? parsedLegacy.nodes : [],
+        connections: Array.isArray(parsedLegacy.connections)
+          ? parsedLegacy.connections
+          : [],
       });
     } catch (error) {
       console.error("Error loading canvas snapshot:", error);
@@ -144,4 +176,27 @@ export default function WorkflowDetailsCanvas({
       </div>
     </section>
   );
+}
+
+// Map ReactFlow node types into legacy types so the readonly canvas can render them.
+function mapNodeType(type: ReactFlowNode["type"]): WorkflowNodeType {
+  switch (type) {
+    case "START":
+      return "START";
+    case "CONDITIONAL":
+      return "CONDITIONAL";
+    default:
+      return "ACTION";
+  }
+}
+
+// Convert a ReactFlow node into the legacy readonly node shape.
+function mapReactFlowNode(node: ReactFlowNode): WorkflowNodeData {
+  return {
+    id: node.id,
+    title: node.data.label,
+    type: mapNodeType(node.type),
+    x: node.position.x,
+    y: node.position.y,
+  };
 }
