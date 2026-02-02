@@ -1,72 +1,203 @@
 "use client";
 
 // This scaffold builds the 3-panel layout and toolbar using destination styles.
-// ReactFlow remains minimal and empty; functionality will be layered later.
+// Core interactions (add, move, connect, delete, duplicate) are now enabled.
 
-import ReactFlow, { Background, Controls, MiniMap } from "reactflow";
+import { useCallback, useMemo } from "react";
+import ReactFlow, {
+  addEdge,
+  Background,
+  type Connection,
+  Controls,
+  type Edge,
+  MiniMap,
+  type Node,
+  useEdgesState,
+  useNodesState,
+} from "reactflow";
+import CustomNode, { type CustomNodeData } from "./CustomNode";
+import NodeCatalog from "./NodeCatalog";
+import { createDefaultNodeConfig, generateId } from "./workflow-utils";
+import type { NodeConfig, NodeType } from "./types";
 
-// Empty graph data keeps the scaffold deterministic and avoids business logic.
-const initialNodes: never[] = [];
-const initialEdges: never[] = [];
+// Local node data aligns with the workflow contract while staying ReactFlow-friendly.
+type ReactFlowNodeData = CustomNodeData & {
+  config: NodeConfig;
+};
 
-// Placeholder catalog items provide the visual structure without logic.
-const placeholderCatalog = [
-  {
-    title: "Inicio",
-    description: "Punto de entrada del workflow.",
-    badge: "Único",
-  },
-  {
-    title: "HTTP Request",
-    description: "Realiza una petición HTTP.",
-  },
-  {
-    title: "Command",
-    description: "Ejecuta un comando del sistema.",
-  },
-  {
-    title: "Conditional",
-    description: "Bifurca el flujo según una condición.",
-  },
-];
+// Start with an empty edge list; user connections will populate this.
+const initialEdges: Edge[] = [];
 
-// The component is still a scaffold; it focuses on layout only.
+
+// The component now wires layout plus core interactions; advanced panels come later.
 export default function ReactFlowCanvas() {
+  // ReactFlow helpers keep drag updates and state management ergonomic.
+  const [nodes, setNodes, onNodesChange] = useNodesState<ReactFlowNodeData>([]);
+  const [edges, _setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  // ReactFlow needs a node type map to render our custom node UI.
+  const nodeTypes = useMemo(() => ({ custom: CustomNode }), []);
+
+  // START node uniqueness is enforced in the catalog.
+  const hasStartNode = useMemo(
+    () => nodes.some((node) => node.data.nodeType === "START"),
+    [nodes]
+  );
+
+  // Map node types to user-facing labels that match the destination language.
+  const getNodeLabel = (nodeType: NodeType) => {
+    switch (nodeType) {
+      case "START":
+        return "Inicio";
+      case "HTTP_REQUEST":
+        return "HTTP Request";
+      case "COMMAND":
+        return "Command";
+      case "CONDITIONAL":
+        return "Conditional";
+      default:
+        return nodeType;
+    }
+  };
+
+  // Remove a node and any edges connected to it.
+  const handleDeleteNode = useCallback(
+    (nodeId: string) => {
+      setNodes((prev) => prev.filter((node) => node.id !== nodeId));
+      _setEdges((prev) =>
+        prev.filter((edge) => edge.source !== nodeId && edge.target !== nodeId)
+      );
+    },
+    [_setEdges, setNodes]
+  );
+
+  // Duplicate a node with a slight position offset for visibility.
+  const handleDuplicateNode = useCallback(
+    (nodeId: string) => {
+      setNodes((prev) => {
+        const node = prev.find((item) => item.id === nodeId);
+        if (!node) return prev;
+        if (node.data.nodeType === "START") return prev;
+
+        const duplicated: Node<ReactFlowNodeData> = {
+          ...node,
+          id: generateId(),
+          position: {
+            x: node.position.x + 40,
+            y: node.position.y + 40,
+          },
+          data: {
+            ...node.data,
+            label: `${node.data.label} (copia)`,
+            onDelete: handleDeleteNode,
+            onDuplicate: handleDuplicateNode,
+          },
+        };
+
+        return [...prev, duplicated];
+      });
+    },
+    [handleDeleteNode, setNodes]
+  );
+
+  // Build node data with callbacks so the CustomNode can trigger actions.
+  const buildNodeData = useCallback(
+    (nodeType: NodeType): ReactFlowNodeData => ({
+      label: getNodeLabel(nodeType),
+      nodeType,
+      config: createDefaultNodeConfig(nodeType),
+      isConfigured: nodeType === "START",
+      onDelete: handleDeleteNode,
+      onDuplicate: handleDuplicateNode,
+    }),
+    [handleDeleteNode, handleDuplicateNode]
+  );
+
+  // Add a node at a slightly offset position to keep new nodes visible.
+  const handleAddNode = useCallback(
+    (nodeType: NodeType) => {
+      const id = generateId();
+      const offset = nodes.length * 40;
+
+      const newNode: Node<ReactFlowNodeData> = {
+        id,
+        type: "custom",
+        position: { x: 220 + offset, y: 120 + offset },
+        data: buildNodeData(nodeType),
+      };
+
+      setNodes((prev) => [...prev, newNode]);
+    },
+    [buildNodeData, nodes.length, setNodes]
+  );
+
+  // Apply connection rules: START cannot receive edges, CONDITIONAL caps outputs.
+  const handleConnect = useCallback(
+    (connection: Connection) => {
+      if (!connection.source || !connection.target) return;
+
+      const sourceNode = nodes.find((node) => node.id === connection.source);
+      const targetNode = nodes.find((node) => node.id === connection.target);
+
+      if (!sourceNode || !targetNode) return;
+      if (targetNode.data.nodeType === "START") return;
+      if (connection.source === connection.target) return;
+
+      _setEdges((prev) => {
+        // Enforce CONDITIONAL rules with TRUE/FALSE labels.
+        if (sourceNode.data.nodeType === "CONDITIONAL") {
+          const outgoing = prev.filter(
+            (edge) => edge.source === connection.source
+          );
+
+          if (outgoing.length >= 2) return prev;
+
+          const hasTrue = outgoing.some((edge) => edge.label === "TRUE");
+          const hasFalse = outgoing.some((edge) => edge.label === "FALSE");
+
+          let label: "TRUE" | "FALSE" | null = null;
+          if (connection.sourceHandle === "true") label = "TRUE";
+          if (connection.sourceHandle === "false") label = "FALSE";
+          if (!label) {
+            if (!hasTrue) label = "TRUE";
+            else if (!hasFalse) label = "FALSE";
+          }
+
+          if (!label) return prev;
+          if (outgoing.some((edge) => edge.label === label)) return prev;
+
+          const conditionalEdge: Edge = {
+            id: generateId(),
+            source: connection.source,
+            target: connection.target,
+            label,
+            sourceHandle: connection.sourceHandle ?? undefined,
+            type: "conditional",
+          };
+
+          return [...prev, conditionalEdge];
+        }
+
+        const newEdge: Edge = {
+          id: generateId(),
+          source: connection.source,
+          target: connection.target,
+          type: "default",
+        };
+
+        return addEdge(newEdge, prev);
+      });
+    },
+    [_setEdges, nodes]
+  );
+
   return (
     <section className="canvas-shell rf-canvas-shell">
       {/* 3-panel layout: catalog, canvas, inspector. */}
       <div className="canvas-layout rf-canvas-layout">
         <aside className="canvas-panel rf-panel rf-catalog-panel">
-          <div className="rf-panel-inner">
-            <p className="panel-title">Catálogo de nodos</p>
-            {/* The search input is a placeholder for now. */}
-            <input
-              className="form-input rf-search-input"
-              placeholder="Buscar nodos..."
-              aria-label="Buscar nodos"
-            />
-            <div className="rf-catalog-list">
-              {placeholderCatalog.map((item) => (
-                <div key={item.title} className="rf-catalog-card">
-                  <div className="rf-catalog-icon" aria-hidden="true">
-                    ●
-                  </div>
-                  <div className="rf-catalog-meta">
-                    <div className="rf-catalog-row">
-                      <span className="rf-catalog-title">{item.title}</span>
-                      {item.badge ? (
-                        <span className="badge rf-badge">{item.badge}</span>
-                      ) : null}
-                    </div>
-                    <p className="rf-catalog-desc">{item.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="rf-panel-hint">
-              Arrastra o haz clic para agregar un nodo.
-            </p>
-          </div>
+          {/* Node catalog now handles search and START uniqueness. */}
+          <NodeCatalog onAddNode={handleAddNode} hasStartNode={hasStartNode} />
         </aside>
 
         <section className="canvas-stage rf-canvas-stage">
@@ -99,20 +230,37 @@ export default function ReactFlowCanvas() {
           {/* Canvas container keeps the existing destination look & feel. */}
           <div className="canvas-scroll rf-canvas-scroll">
             <ReactFlow
-              // The stub uses empty graph data to confirm the ReactFlow mount works.
-              nodes={initialNodes}
-              edges={initialEdges}
+              // The canvas now renders the nodes created from the catalog.
+              nodes={nodes}
+              edges={edges}
+              // fitView keeps the empty canvas centered for a cleaner initial view.
               fitView
+              // The className allows us to style ReactFlow with destination tokens.
+              className="rf-reactflow"
+              // ReactFlow handlers keep the UX responsive to drag updates.
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={handleConnect}
+              nodeTypes={nodeTypes}
             >
-              {/* Dotted background will be tuned later to match the theme. */}
-              <Background variant="dots" gap={16} size={1} />
-              {/* Controls and minimap are included to validate ReactFlow UI elements. */}
-              <Controls />
-              <MiniMap />
+              {/* Dotted background uses destination CSS variables for color. */}
+              <Background
+                variant="dots"
+                gap={20}
+                size={1}
+                color="var(--rf-grid)"
+              />
+              {/* Controls are anchored bottom-left to match the target UX. */}
+              <Controls position="bottom-left" />
+              {/* Minimap is anchored bottom-right and styled via CSS. */}
+              <MiniMap position="bottom-right" className="rf-minimap" />
             </ReactFlow>
-            <div className="rf-canvas-placeholder">
-              Canvas vacío: aquí vivirá ReactFlow con nodos reales.
-            </div>
+            {/* Keep the placeholder visible only when the canvas has no nodes. */}
+            {nodes.length === 0 ? (
+              <div className="rf-canvas-placeholder">
+                Canvas vacío: aquí vivirá ReactFlow con nodos reales.
+              </div>
+            ) : null}
           </div>
         </section>
 
