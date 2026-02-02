@@ -3,7 +3,7 @@
 // This scaffold builds the 3-panel layout and toolbar using destination styles.
 // Core interactions (add, move, connect, delete, duplicate) are now enabled.
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import ReactFlow, {
   addEdge,
   Background,
@@ -15,15 +15,15 @@ import ReactFlow, {
   useEdgesState,
   useNodesState,
 } from "reactflow";
-import CustomNode, { type CustomNodeData } from "./CustomNode";
+import CustomNode from "./CustomNode";
+import type { CanvasNodeData } from "./canvas-types";
 import NodeCatalog from "./NodeCatalog";
 import { createDefaultNodeConfig, generateId } from "./workflow-utils";
-import type { NodeConfig, NodeType } from "./types";
+import type { NodeType } from "./types";
+import NodeInspector from "./NodeInspector";
 
 // Local node data aligns with the workflow contract while staying ReactFlow-friendly.
-type ReactFlowNodeData = CustomNodeData & {
-  config: NodeConfig;
-};
+type ReactFlowNodeData = CanvasNodeData;
 
 // Start with an empty edge list; user connections will populate this.
 const initialEdges: Edge[] = [];
@@ -34,6 +34,8 @@ export default function ReactFlowCanvas() {
   // ReactFlow helpers keep drag updates and state management ergonomic.
   const [nodes, setNodes, onNodesChange] = useNodesState<ReactFlowNodeData>([]);
   const [edges, _setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  // Selection state powers the right-hand inspector panel.
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   // ReactFlow needs a node type map to render our custom node UI.
   const nodeTypes = useMemo(() => ({ custom: CustomNode }), []);
@@ -43,6 +45,11 @@ export default function ReactFlowCanvas() {
     () => nodes.some((node) => node.data.nodeType === "START"),
     [nodes]
   );
+
+  // Resolve the currently selected node for the inspector.
+  const selectedNode = useMemo(() => {
+    return nodes.find((node) => node.id === selectedNodeId) ?? null;
+  }, [nodes, selectedNodeId]);
 
   // Map node types to user-facing labels that match the destination language.
   const getNodeLabel = (nodeType: NodeType) => {
@@ -67,6 +74,7 @@ export default function ReactFlowCanvas() {
       _setEdges((prev) =>
         prev.filter((edge) => edge.source !== nodeId && edge.target !== nodeId)
       );
+      setSelectedNodeId((prev) => (prev === nodeId ? null : prev));
     },
     [_setEdges, setNodes]
   );
@@ -74,6 +82,7 @@ export default function ReactFlowCanvas() {
   // Duplicate a node with a slight position offset for visibility.
   const handleDuplicateNode = useCallback(
     (nodeId: string) => {
+      const duplicatedId = generateId();
       setNodes((prev) => {
         const node = prev.find((item) => item.id === nodeId);
         if (!node) return prev;
@@ -81,7 +90,7 @@ export default function ReactFlowCanvas() {
 
         const duplicated: Node<ReactFlowNodeData> = {
           ...node,
-          id: generateId(),
+          id: duplicatedId,
           position: {
             x: node.position.x + 40,
             y: node.position.y + 40,
@@ -96,6 +105,7 @@ export default function ReactFlowCanvas() {
 
         return [...prev, duplicated];
       });
+      setSelectedNodeId(duplicatedId);
     },
     [handleDeleteNode, setNodes]
   );
@@ -127,8 +137,31 @@ export default function ReactFlowCanvas() {
       };
 
       setNodes((prev) => [...prev, newNode]);
+      setSelectedNodeId(id);
     },
     [buildNodeData, nodes.length, setNodes]
+  );
+
+  // Update a node's config and label from the inspector panel.
+  const handleUpdateNodeConfig = useCallback(
+    (nodeId: string, config: CanvasNodeData["config"], label: string) => {
+      setNodes((prev) =>
+        prev.map((node) => {
+          if (node.id !== nodeId) return node;
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              label,
+              config,
+              // Saving from the inspector marks the node as configured.
+              isConfigured: true,
+            },
+          };
+        })
+      );
+    },
+    [setNodes]
   );
 
   // Apply connection rules: START cannot receive edges, CONDITIONAL caps outputs.
@@ -241,6 +274,9 @@ export default function ReactFlowCanvas() {
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onConnect={handleConnect}
+              // Click handlers keep the inspector in sync with selection.
+              onNodeClick={(_, node) => setSelectedNodeId(node.id)}
+              onPaneClick={() => setSelectedNodeId(null)}
               nodeTypes={nodeTypes}
             >
               {/* Dotted background uses destination CSS variables for color. */}
@@ -265,36 +301,11 @@ export default function ReactFlowCanvas() {
         </section>
 
         <aside className="canvas-panel canvas-panel-right rf-panel rf-inspector-panel">
-          <div className="rf-panel-inner">
-            <p className="panel-title">Inspector</p>
-            {/* Tabs are placeholders and will be wired later. */}
-            <div className="rf-tabs" role="tablist" aria-label="Inspector tabs">
-              <button
-                className="rf-tab rf-tab-active"
-                type="button"
-                role="tab"
-                aria-selected="true"
-              >
-                Configuración
-              </button>
-              <button
-                className="rf-tab"
-                type="button"
-                role="tab"
-                aria-selected="false"
-              >
-                Errores
-              </button>
-            </div>
-            <div className="panel-card rf-inspector-card">
-              <p className="panel-label">Estado</p>
-              <p className="panel-value">Selecciona un nodo para editar.</p>
-              <p className="panel-label">Tip</p>
-              <p className="panel-value">
-                El inspector mostrará formularios por tipo de nodo.
-              </p>
-            </div>
-          </div>
+          {/* The inspector reflects the selected node and updates its config. */}
+          <NodeInspector
+            node={selectedNode}
+            onUpdateConfig={handleUpdateNodeConfig}
+          />
         </aside>
       </div>
     </section>
