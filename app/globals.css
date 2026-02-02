@@ -504,6 +504,158 @@ body {
   min-width: 0;
 }
 
+/* ReactFlow scaffold overrides keep the layout aligned with the destination style. */
+.rf-canvas-shell {
+  padding: 0;
+}
+
+/* Ensure panels align to the top and stretch with the canvas area. */
+.rf-canvas-layout .canvas-panel {
+  margin-top: 0;
+  align-self: stretch;
+  height: 100%;
+}
+
+/* Inner panel wrapper provides consistent spacing for new sections. */
+.rf-panel-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem;
+}
+
+/* Toolbar tweaks keep title and actions readable on smaller screens. */
+.rf-toolbar {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.rf-toolbar-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.rf-toolbar-actions {
+  gap: 0.6rem;
+}
+
+/* Catalog styling borrows the destination palette for clean cards. */
+.rf-search-input {
+  font-size: 0.85rem;
+}
+
+.rf-catalog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rf-catalog-card {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(74, 74, 74, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 16px rgba(74, 74, 74, 0.08);
+}
+
+.rf-catalog-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 0.75rem;
+  background: rgba(158, 139, 255, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.rf-catalog-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.rf-catalog-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.rf-catalog-desc {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: rgba(74, 74, 74, 0.7);
+}
+
+.rf-badge {
+  font-size: 0.65rem;
+  background: rgba(98, 201, 169, 0.25);
+}
+
+.rf-panel-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: rgba(74, 74, 74, 0.6);
+}
+
+/* Canvas container ensures ReactFlow fills the scroll area. */
+.rf-canvas-scroll {
+  position: relative;
+}
+
+.rf-canvas-scroll .react-flow {
+  width: 100%;
+  height: 100%;
+}
+
+.rf-canvas-placeholder {
+  position: absolute;
+  inset: auto 1.5rem 1.5rem auto;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  font-size: 0.75rem;
+  color: rgba(74, 74, 74, 0.7);
+  box-shadow: 0 6px 14px rgba(74, 74, 74, 0.12);
+}
+
+/* Tabs are simple buttons matching the destination style. */
+.rf-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(74, 74, 74, 0.1);
+  padding-bottom: 0.5rem;
+}
+
+.rf-tab {
+  border: none;
+  background: transparent;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(74, 74, 74, 0.6);
+  cursor: pointer;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+}
+
+.rf-tab-active {
+  background: rgba(98, 201, 169, 0.2);
+  color: var(--ink);
+}
+
+.rf-inspector-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
 .canvas-toolbar {
   display: flex;
   align-items: center;
