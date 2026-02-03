@@ -112,7 +112,7 @@ export default function NodeInspector({
           <input
             id="node-label"
             className="form-input"
-            value={draftLabel}
+            value={draftLabel ?? ""}
             onChange={(event) => setDraftLabel(event.target.value)}
           />
 

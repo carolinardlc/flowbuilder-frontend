@@ -1,29 +1,190 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   DESIGN SYSTEM TOKENS
+   Professional design system inspired by Linear/Notion/Stripe
+   Keeping kid-friendly palette with high contrast
+   ========================================================================== */
+
 :root {
+  /* Typography */
+  --font-display: "Poppins", system-ui, sans-serif;
+  --font-body: "Inter", "Poppins", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  /* Type Scale (Major Third - 1.25) */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+
+  /* Line Heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Spacing Scale (8pt grid) */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* Border Radius Scale */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --duration-fast: 100ms;
+  --duration-normal: 150ms;
+  --duration-slow: 250ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ===== LIGHT MODE COLORS ===== */
+  /* Primary Palette */
   --sand: #f9e7d4;
+  --sand-50: #fdf7f0;
+  --sand-100: #faf0e4;
+
   --rose: #f5b6a5;
+  --rose-dark: #e89a85;
+  --rose-light: #fad4ca;
+
   --mint: #62c9a9;
+  --mint-dark: #4bb593;
+  --mint-light: #a8dfc9;
+
   --lavender: #9e8bff;
-  --ink: #4a4a4a;
-  --mist: #d4d4d4;
+  --lavender-dark: #8672e8;
+  --lavender-light: #c4b8ff;
+
+  /* Neutrals */
+  --ink: #2d2d2d;
+  --ink-secondary: #5a5a5a;
+  --ink-tertiary: #8a8a8a;
+  --mist: #e5e5e5;
   --card: #ffffff;
+
+  /* Semantic States */
+  --success: #22c55e;
+  --success-light: #86efac;
+  --warning: #f59e0b;
+  --warning-light: #fcd34d;
+  --error: #ef4444;
+  --error-light: #fca5a5;
+  --info: #3b82f6;
+  --info-light: #93c5fd;
+
+  /* Shadows (Light Mode) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+
+  /* Background */
+  --bg-primary: var(--sand);
+  --bg-secondary: var(--sand-100);
+  --bg-elevated: var(--card);
+  --border-color: rgba(74, 74, 74, 0.12);
+}
+
+/* ===== DARK MODE ===== */
+[data-theme="dark"],
+.dark {
+  /* Dark mode colors - high contrast */
+  --sand: #1a1a2e;
+  --sand-50: #16162a;
+  --sand-100: #1e1e36;
+
+  --rose: #ff9b8a;
+  --rose-dark: #ff7a64;
+  --rose-light: #ffb8ac;
+
+  --mint: #5eedb8;
+  --mint-dark: #3de0a5;
+  --mint-light: #8ff5d0;
+
+  --lavender: #a594ff;
+  --lavender-dark: #8b78f0;
+  --lavender-light: #c5baff;
+
+  /* Neutrals - inverted for dark */
+  --ink: #f0f0f0;
+  --ink-secondary: #b8b8b8;
+  --ink-tertiary: #888888;
+  --mist: #3a3a4a;
+  --card: #242438;
+
+  /* Semantic States - brighter for dark mode */
+  --success: #4ade80;
+  --success-light: #22c55e;
+  --warning: #fbbf24;
+  --warning-light: #f59e0b;
+  --error: #f87171;
+  --error-light: #ef4444;
+  --info: #60a5fa;
+  --info-light: #3b82f6;
+
+  /* Shadows (Dark Mode - subtle glows) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+
+  /* Background - dark variants */
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16162a;
+  --bg-elevated: #242438;
+  --border-color: rgba(255, 255, 255, 0.08);
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  /* Smooth theme transitions */
+  color-scheme: light dark;
+}
+
 body {
   margin: 0;
-  background: var(--sand);
+  background: var(--bg-primary);
   color: var(--ink);
-  font-family: var(--font-poppins, "Poppins", "Inter", sans-serif);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  transition: background var(--duration-slow) var(--ease-out),
+    color var(--duration-slow) var(--ease-out);
 }
 
 .app-shell {
   min-height: 100vh;
-  background: var(--sand);
+  background: var(--bg-primary);
+  transition: background var(--duration-slow) var(--ease-out);
 }
 
 .app-header {
@@ -62,33 +223,63 @@ body {
 .nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  align-items: center;
+  gap: var(--space-3);
 }
 
 .nav-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
   background: var(--rose);
   color: var(--ink);
   text-decoration: none;
-  font-size: 0.875rem;
-  font-weight: 600;
-  transition:
-    background 200ms ease,
-    transform 200ms ease;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  transition: all var(--duration-normal) var(--ease-out);
 }
 
 .nav-link:hover {
-  background: var(--mint);
+  background: var(--rose-dark);
   transform: translateY(-1px);
 }
 
 .nav-link-active {
   background: var(--mint);
-  box-shadow: 0 6px 14px rgba(98, 201, 169, 0.35);
+  box-shadow: var(--shadow-md);
+}
+
+/* ==========================================================================
+   THEME TOGGLE
+   ========================================================================== */
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  color: var(--ink);
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.theme-toggle:hover {
+  background: var(--sand-100);
+  border-color: var(--lavender);
+}
+
+.theme-toggle svg {
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+
+.theme-toggle:hover svg {
+  transform: rotate(15deg);
 }
 
 .app-main {
@@ -163,51 +354,74 @@ body {
   gap: 1rem;
 }
 
+/* ==========================================================================
+   BUTTONS - Design System Components
+   ========================================================================== */
+
 .btn-primary,
 .btn-secondary {
-  border-radius: 999px;
-  padding: 0.75rem 1.5rem;
-  font-size: 0.875rem;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  font-family: inherit;
   border: none;
   cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-out);
 }
 
 .btn-primary {
   background: var(--rose);
   color: var(--ink);
-  box-shadow: 0 10px 20px rgba(245, 182, 165, 0.45);
-  transition: transform 200ms ease;
+  box-shadow: var(--shadow-md);
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
+  background: var(--rose-dark);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
 }
 
 .btn-primary:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.5;
   transform: none;
 }
 
 .btn-secondary {
   background: transparent;
   color: var(--ink);
-  border: 2px solid var(--mint);
-  transition: background 200ms ease;
+  border: 1px solid var(--mist);
 }
 
 .btn-secondary:hover {
-  background: rgba(98, 201, 169, 0.3);
+  background: var(--sand-50);
+  border-color: var(--ink-tertiary);
 }
 
 .btn-danger {
-  border-color: rgba(217, 108, 108, 0.6);
-  color: #c45757;
+  background: transparent;
+  border: 1px solid var(--error-light);
+  color: var(--error);
 }
 
 .btn-danger:hover {
-  background: rgba(217, 108, 108, 0.15);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Button Sizes */
+.btn-sm {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+}
+
+.btn-lg {
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-base);
 }
 
 .feature-grid {
@@ -345,55 +559,65 @@ body {
   justify-content: center;
 }
 
+/* ==========================================================================
+   FORMS - Design System Components
+   ========================================================================== */
+
 .form-card {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--space-6);
 }
 
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .form-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--ink);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  color: var(--ink-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .form-input,
 .form-textarea {
-  border-radius: 1rem;
-  border: 1px solid rgba(74, 74, 74, 0.15);
-  padding: 0.75rem 1rem;
-  font-size: 0.95rem;
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
   font-family: inherit;
-  background: #fffdf9;
+  background: var(--bg-elevated);
   color: var(--ink);
   outline: none;
-  transition:
-    border 200ms ease,
-    box-shadow 200ms ease;
+  transition: all var(--duration-fast) ease;
 }
 
 .form-input:focus,
 .form-textarea:focus {
-  border-color: rgba(98, 201, 169, 0.8);
-  box-shadow: 0 0 0 3px rgba(98, 201, 169, 0.2);
+  border-color: var(--lavender);
+  box-shadow: 0 0 0 3px var(--lavender-light);
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: var(--ink-tertiary);
 }
 
 .form-error {
   margin: 0;
-  font-size: 0.8rem;
-  color: #d96c6c;
+  font-size: var(--text-xs);
+  color: var(--error);
 }
 
 .form-actions {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .modal-overlay {
@@ -428,48 +652,62 @@ body {
   display: flex;
   flex-direction: column;
   margin: 0;
-  width: 100%;
-  max-width: 100vw;
-  padding: 0 0.5rem;
-  /* Ensure shell fills available height for ReactFlow */
-  height: calc(100vh - 6rem);
-  min-height: 600px;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  background: var(--sand, #f9e7d4);
+}
+
+.rf-canvas-shell {
+  background: var(--sand, #f9e7d4);
 }
 
 .canvas-layout {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr) 280px;
-  gap: 1rem;
-  align-items: stretch;
-  /* Fill the entire canvas shell height */
+  gap: 0;
+  flex: 1;
+  min-height: 0;
   height: 100%;
 }
 
+/* Panels - light mode with white background */
 .canvas-panel {
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: 1.25rem;
-  padding: 1.25rem;
-  border: 1px solid rgba(74, 74, 74, 0.08);
-  box-shadow: 0 10px 22px rgba(74, 74, 74, 0.08);
-  height: fit-content;
-  align-self: start;
-  margin-top: 5rem;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1rem;
+  border: none;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  height: 100%;
+  overflow-y: auto;
+  color: var(--ink, #2d2d2d);
+}
+
+/* Left panel - catalog */
+.rf-catalog-panel {
+  border-right: 1px solid rgba(74, 74, 74, 0.1);
+}
+
+/* Right panel - inspector */
+.rf-inspector-panel {
+  border-left: 1px solid rgba(74, 74, 74, 0.1);
 }
 
 .canvas-panel-right {
-  min-height: 10rem;
+  min-height: auto;
   padding: 1rem;
 }
 
 .panel-title {
   margin: 0;
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-align: center;
-  width: 100%;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  color: var(--canvas-text, var(--ink));
 }
 
 .panel-list {
@@ -513,6 +751,121 @@ body {
   color: var(--ink);
 }
 
+/* ==========================================================================
+   TOOLBAR - Light themed header with icons
+   ========================================================================== */
+
+.rf-toolbar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--lavender, #9e8bff);
+  border-bottom: 1px solid rgba(74, 74, 74, 0.1);
+  flex-shrink: 0;
+}
+
+.rf-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rf-toolbar-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: background 150ms ease;
+}
+
+.rf-toolbar-back:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.rf-toolbar-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.rf-toolbar-breadcrumb a {
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.rf-toolbar-breadcrumb a:hover {
+  color: #ffffff;
+}
+
+.rf-breadcrumb-sep {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.rf-toolbar-name {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.rf-toolbar-center {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.rf-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Action buttons - ghost style with icons */
+.rf-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.rf-action-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.rf-action-btn svg {
+  flex-shrink: 0;
+}
+
+/* Primary action button - Green Save button */
+.rf-action-primary {
+  background: var(--mint, #62c9a9);
+  border-color: var(--mint, #62c9a9);
+  color: var(--ink, #2d2d2d);
+  font-weight: 600;
+}
+
+.rf-action-primary:hover {
+  background: var(--mint-dark, #4bb593);
+  border-color: var(--mint-dark, #4bb593);
+}
+
 .panel-empty {
   margin-top: 1rem;
   color: rgba(74, 74, 74, 0.6);
@@ -522,21 +875,22 @@ body {
 .canvas-stage {
   display: flex;
   flex-direction: column;
-  gap: 0;
   min-width: 0;
+  height: 100%;
+  background: var(--sand, #f9e7d4);
 }
 
 /* ==========================================================================
    CANVAS AREA STYLING
-   Premium look with rounded corners, refined grid, and polished controls.
+   Light theme with refined grid and polished controls.
    ========================================================================== */
 
 .rf-canvas-shell {
   padding: 0;
-  background: var(--sand);
+  background: var(--sand, #f9e7d4);
 }
 
-/* ReactFlow color tokens tied to the destination palette */
+/* ReactFlow color tokens for light theme */
 .rf-canvas-scroll {
   --rf-grid: rgba(74, 74, 74, 0.08);
   --rf-control-bg: rgba(255, 255, 255, 0.98);
@@ -548,9 +902,8 @@ body {
 .rf-canvas-scroll {
   position: relative;
   height: 100%;
-  min-height: 400px;
   flex: 1;
-  background: var(--sand);
+  background: var(--sand, #f9e7d4);
   overflow: hidden;
 }
 
@@ -569,7 +922,7 @@ body {
 .rf-canvas-scroll .react-flow__controls {
   background: var(--rf-control-bg);
   border: 1px solid var(--rf-control-border);
-  border-radius: 0.75rem;
+  border-radius: 4px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
@@ -604,7 +957,7 @@ body {
 .rf-minimap {
   background: var(--rf-minimap-bg) !important;
   border: 1px solid var(--rf-control-border);
-  border-radius: 0.75rem;
+  border-radius: 4px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
@@ -2496,6 +2849,7 @@ body {
     transform: scale(0.96);
     box-shadow: 0 10px 18px rgba(74, 74, 74, 0.18);
   }
+
   100% {
     transform: scale(1);
     box-shadow: 0 14px 24px rgba(74, 74, 74, 0.12);

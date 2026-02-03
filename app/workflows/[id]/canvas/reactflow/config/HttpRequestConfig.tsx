@@ -72,7 +72,7 @@ export default function HttpRequestConfigForm({
           <select
             id="http-method"
             className="form-input rf-select"
-            value={config.method}
+            value={config.method ?? "GET"}
             onChange={(event) =>
               updateConfig({ method: event.target.value as HttpRequestConfig["method"] })
             }
@@ -93,7 +93,7 @@ export default function HttpRequestConfigForm({
             id="http-url"
             className="form-input"
             placeholder="https://api.ejemplo.com"
-            value={config.url}
+            value={config.url ?? ""}
             onChange={(event) => updateConfig({ url: event.target.value })}
           />
         </div>
@@ -107,7 +107,7 @@ export default function HttpRequestConfigForm({
           <select
             id="http-body-type"
             className="form-input rf-select"
-            value={config.bodyType}
+            value={config.bodyType ?? "json"}
             onChange={(event) =>
               updateConfig({
                 bodyType: event.target.value as HttpRequestConfig["bodyType"],
@@ -128,7 +128,7 @@ export default function HttpRequestConfigForm({
             className="form-input"
             type="number"
             min={0}
-            value={config.timeout}
+            value={config.timeout ?? 0}
             onChange={(event) =>
               updateConfig({ timeout: Number(event.target.value) || 0 })
             }
@@ -144,7 +144,7 @@ export default function HttpRequestConfigForm({
             className="form-input"
             type="number"
             min={0}
-            value={config.retries}
+            value={config.retries ?? 0}
             onChange={(event) =>
               updateConfig({ retries: Number(event.target.value) || 0 })
             }
@@ -160,7 +160,7 @@ export default function HttpRequestConfigForm({
           id="http-body"
           className="form-textarea"
           rows={4}
-          value={config.body}
+          value={config.body ?? ""}
           onChange={(event) => updateConfig({ body: event.target.value })}
         />
       </div>

@@ -29,7 +29,7 @@ export default function ConditionalConfigForm({
           id="cond-left"
           className="form-input"
           placeholder="status"
-          value={config.leftOperand}
+          value={config.leftOperand ?? ""}
           onChange={(event) => updateConfig({ leftOperand: event.target.value })}
         />
       </div>
@@ -41,7 +41,7 @@ export default function ConditionalConfigForm({
         <select
           id="cond-operator"
           className="form-input rf-select"
-          value={config.operator}
+          value={config.operator ?? "equals"}
           onChange={(event) =>
             updateConfig({
               operator: event.target.value as ConditionalConfig["operator"],
@@ -65,7 +65,7 @@ export default function ConditionalConfigForm({
           id="cond-right"
           className="form-input"
           placeholder="OK"
-          value={config.rightOperand}
+          value={config.rightOperand ?? ""}
           onChange={(event) =>
             updateConfig({ rightOperand: event.target.value })
           }

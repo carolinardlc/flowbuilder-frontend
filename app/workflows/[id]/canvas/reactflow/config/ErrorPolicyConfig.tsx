@@ -28,7 +28,7 @@ export default function ErrorPolicyConfig({
       <select
         id="error-policy"
         className="form-input rf-select"
-        value={policy}
+        value={policy ?? "STOP_ON_FAIL"}
         onChange={(event) => onChange(event.target.value as ErrorPolicy)}
       >
         <option value="STOP_ON_FAIL">STOP_ON_FAIL</option>

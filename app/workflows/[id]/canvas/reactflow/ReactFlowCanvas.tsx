@@ -660,28 +660,46 @@ function ReactFlowCanvasInner() {
             className="rf-action-btn"
             type="button"
             onClick={handleValidate}
+            title="Validar workflow"
           >
-            <span className="rf-action-icon">✓</span>
-            Validar
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Validar</span>
           </button>
           <button
             className="rf-action-btn"
             type="button"
             onClick={() => setShowImportDialog(true)}
+            title="Importar workflow"
           >
-            <span className="rf-action-icon">↓</span>
-            Importar
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Importar</span>
           </button>
           <button
             className="rf-action-btn"
             type="button"
             onClick={handleExport}
+            title="Exportar workflow"
           >
-            <span className="rf-action-icon">↑</span>
-            Exportar
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span>Exportar</span>
           </button>
-          <button className="rf-action-btn rf-action-primary" type="button" onClick={handleSave}>
-            Guardar
+          <button className="rf-action-btn rf-action-primary" type="button" onClick={handleSave} title="Guardar workflow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span>Guardar</span>
           </button>
         </div>
       </header>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ThemeToggle from "./ThemeToggle";
 
 const navItems = [
   { label: "Inicio", href: "/" },
@@ -29,13 +30,13 @@ export default function Header() {
             <Link
               key={item.label}
               href={item.href}
-              className={`nav-link ${
-                isActive(item.href) ? "nav-link-active" : ""
-              }`}
+              className={`nav-link ${isActive(item.href) ? "nav-link-active" : ""
+                }`}
             >
               {item.label}
             </Link>
           ))}
+          <ThemeToggle />
         </nav>
       </div>
     </header>

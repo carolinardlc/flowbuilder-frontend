@@ -52,13 +52,13 @@ export default function KeyValueEditor({
             <input
               className="form-input rf-kv-input"
               placeholder="Clave"
-              value={row.key}
+              value={row.key ?? ""}
               onChange={(event) => updateRow(row.id, "key", event.target.value)}
             />
             <input
               className="form-input rf-kv-input"
               placeholder="Valor"
-              value={row.value}
+              value={row.value ?? ""}
               onChange={(event) =>
                 updateRow(row.id, "value", event.target.value)
               }

@@ -66,7 +66,7 @@ export default function CommandConfigForm({
             id="command-name"
             className="form-input"
             placeholder="npm"
-            value={config.command}
+            value={config.command ?? ""}
             onChange={(event) => updateConfig({ command: event.target.value })}
           />
         </div>
@@ -97,7 +97,7 @@ export default function CommandConfigForm({
             className="form-input"
             type="number"
             min={0}
-            value={config.timeout}
+            value={config.timeout ?? 0}
             onChange={(event) =>
               updateConfig({ timeout: Number(event.target.value) || 0 })
             }
