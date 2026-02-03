@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import WorkflowConnection from "./WorkflowConnection";
 import WorkflowNode from "./WorkflowNode";
 import NodeConfigPanel from "./NodeConfigPanel";
@@ -13,6 +13,7 @@ import { useDragAndDrop } from "./hooks/useDragAndDrop";
 import { useConnections } from "./hooks/useConnections";
 import { createNode } from "./utils/nodeUtils";
 import type { CanvasProps } from "./types";
+import { useWorkflows } from "../../../context/WorkflowsContext";
 
 /**
  * Componente principal del Canvas de Workflow
@@ -21,8 +22,15 @@ import type { CanvasProps } from "./types";
  * pueden crear, conectar y configurar nodos de workflow.
  */
 export default function Canvas({ workflowId, actions }: CanvasProps) {
+  const { workflows } = useWorkflows();
+  const workflowName =
+    workflows.find((workflow) => workflow.id === workflowId)?.name ?? null;
   // Estado local para el contador de IDs
   const [nextNodeId, setNextNodeId] = useState(1);
+  const [justCreatedNodeId, setJustCreatedNodeId] = useState<string | null>(
+    null,
+  );
+  const dropTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Estado principal del canvas
   const {
@@ -96,6 +104,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     handleCompleteConnection,
     handleCancelConnection,
     handleDeleteNode: handleDeleteNodeWithConnections,
+    handleDeleteConnection,
   } = useConnections({
     nodes,
     connections,
@@ -116,16 +125,62 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
       setNodes([...nodes, newNode]);
       setSelectedNodeId(newNode.id);
       setNextNodeId(nextNodeId + 1);
+      setJustCreatedNodeId(newNode.id);
+
+      if (dropTimeoutRef.current) {
+        clearTimeout(dropTimeoutRef.current);
+      }
+      dropTimeoutRef.current = setTimeout(() => {
+        setJustCreatedNodeId(null);
+      }, 180);
     }
 
     handleCanvasMouseUp(e, dragState);
   };
 
+  const [selectedConnectionId, setSelectedConnectionId] = useState<
+    string | null
+  >(null);
+
   // Manejo de eliminación de nodo
   const handleDeleteNodeComplete = (nodeId: string) => {
     handleDeleteNode(nodeId);
     handleDeleteNodeWithConnections(nodeId, selectedNodeId, setSelectedNodeId);
+    if (selectedConnectionId) {
+      setSelectedConnectionId(null);
+    }
   };
+
+  useEffect(() => {
+    return () => {
+      if (dropTimeoutRef.current) {
+        clearTimeout(dropTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!dragState.isDragging || !dragState.newNodeType) {
+      return;
+    }
+
+    const handleWindowMouseMove = (event: MouseEvent) => {
+      setDragState((prev) => {
+        if (!prev.isDragging || !prev.newNodeType) {
+          return prev;
+        }
+        return {
+          ...prev,
+          cursorPosition: { x: event.clientX, y: event.clientY },
+        };
+      });
+    };
+
+    window.addEventListener("mousemove", handleWindowMouseMove);
+    return () => {
+      window.removeEventListener("mousemove", handleWindowMouseMove);
+    };
+  }, [dragState.isDragging, dragState.newNodeType, setDragState]);
 
   return (
     <div className="canvas-layout">
@@ -136,8 +191,12 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
           {NODE_TYPE_ARRAY.map((nodeType) => (
             <div
               key={nodeType.type}
-              className={`draggable-node node node-${nodeType.type.toLowerCase()}`}
-              onMouseDown={() => handleNodeTypeDragStart(nodeType.type)}
+              className={`draggable-node node node-${nodeType.type.toLowerCase()} ${
+                dragState.isDragging && dragState.newNodeType === nodeType.type
+                  ? "draggable-node-active"
+                  : ""
+              }`}
+              onMouseDown={(e) => handleNodeTypeDragStart(nodeType.type, e)}
               style={{ cursor: "grab", marginBottom: "8px" }}
             >
               <span className="node-title" style={{ fontSize: "0.9rem" }}>
@@ -152,8 +211,11 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
       <section className="canvas-stage">
         <div className="canvas-toolbar">
           <div>
-            <p className="hero-kicker">Workflow {workflowId}</p>
-            <h2 className="workflows-title">Vista de canvas</h2>
+            <p className="hero-kicker">Workflow</p>
+            <h2 className="workflows-title">
+              {workflowName ?? `Workflow ${workflowId}`}
+            </h2>
+            <p className="workflows-subtitle">Vista de canvas</p>
           </div>
           <div className="canvas-actions">
             {actions}
@@ -173,6 +235,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
               : () => handleCanvasMouseUp({} as React.MouseEvent, dragState)
           }
           onClick={dragState.isConnecting ? handleCancelConnection : undefined}
+          onMouseDown={() => setSelectedConnectionId(null)}
           style={{
             cursor: dragState.isDragging
               ? "grabbing"
@@ -213,7 +276,9 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                   }
                   y1={
                     (nodes.find((n) => n.id === dragState.connectionStart)?.y ??
-                      0) + CANVAS_CONFIG.CONNECTION_OFFSET_Y
+                      0) +
+                    (dragState.connectionStartOffsetY ??
+                      CANVAS_CONFIG.CONNECTION_OFFSET_Y)
                   }
                   x2={dragState.tempConnection.x}
                   y2={dragState.tempConnection.y}
@@ -231,7 +296,18 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                 if (!from || !to) return null;
 
                 return (
-                  <WorkflowConnection key={connection.id} from={from} to={to} />
+                  <WorkflowConnection
+                    key={connection.id}
+                    id={connection.id}
+                    from={from}
+                    to={to}
+                    fromOffsetY={connection.fromOffsetY}
+                    isSelected={selectedConnectionId === connection.id}
+                    onSelect={(id) => {
+                      setSelectedConnectionId(id);
+                      setSelectedNodeId(null);
+                    }}
+                  />
                 );
               })}
             </svg>
@@ -260,16 +336,23 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                 key={node.id}
                 node={node}
                 selected={node.id === selectedNodeId}
-                onSelect={setSelectedNodeId}
+                isDragging={dragState.draggedNode === node.id}
+                isJustCreated={node.id === justCreatedNodeId}
+                onSelect={(nodeId) => {
+                  setSelectedNodeId(nodeId);
+                  setSelectedConnectionId(null);
+                }}
                 onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
                 onConnectionClick={
                   dragState.isConnecting
                     ? () => handleCompleteConnection(node.id, dragState)
                     : undefined
                 }
-                onStartConnection={() => handleStartConnection(node.id)}
-                onCompleteConnection={() =>
-                  handleCompleteConnection(node.id, dragState)
+                onStartConnection={(nodeId, offsetY) =>
+                  handleStartConnection(nodeId, offsetY)
+                }
+                onCompleteConnection={(nodeId) =>
+                  handleCompleteConnection(nodeId, dragState)
                 }
                 isConnectionTarget={
                   dragState.isConnecting &&
@@ -278,6 +361,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                 isConnectionSource={dragState.connectionStart === node.id}
               />
             ))}
+
           </div>
         </div>
       </section>
@@ -313,13 +397,6 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
               <button
                 className="btn-secondary"
                 style={{ marginTop: "8px", width: "100%", fontSize: "12px" }}
-                onClick={() => handleStartConnection(selectedNode.id)}
-              >
-                Conectar desde aquí
-              </button>
-              <button
-                className="btn-secondary"
-                style={{ marginTop: "8px", width: "100%", fontSize: "12px" }}
                 onClick={handleOpenConfig}
               >
                 ⚙️ Configurar Nodo
@@ -334,6 +411,21 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
               Eliminar nodo
             </button>
           </div>
+        ) : selectedConnectionId ? (
+          <div className="panel-card">
+            <p className="panel-label">Conexión seleccionada</p>
+            <p className="panel-value">ID: {selectedConnectionId}</p>
+            <button
+              className="btn-secondary btn-danger"
+              style={{ marginTop: "12px", width: "100%" }}
+              onClick={() => {
+                handleDeleteConnection(selectedConnectionId);
+                setSelectedConnectionId(null);
+              }}
+            >
+              Eliminar conexión
+            </button>
+          </div>
         ) : (
           <p className="panel-empty">Selecciona un nodo para ver detalles.</p>
         )}
@@ -346,6 +438,25 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
         onClose={handleCloseConfig}
         onSave={handleSaveConfig}
       />
+
+      {dragState.isDragging &&
+        dragState.newNodeType &&
+        dragState.cursorPosition && (
+          <div
+            className={`node node-drag-preview node-${dragState.newNodeType.toLowerCase()}`}
+            style={{
+              position: "fixed",
+              left: dragState.cursorPosition.x - CANVAS_CONFIG.NODE_WIDTH / 2,
+              top: dragState.cursorPosition.y - CANVAS_CONFIG.NODE_HEIGHT / 2,
+              pointerEvents: "none",
+            }}
+          >
+            <span className="node-title">
+              {NODE_TYPES[dragState.newNodeType].label}
+            </span>
+            <span className="node-type">{dragState.newNodeType}</span>
+          </div>
+        )}
     </div>
   );
 }

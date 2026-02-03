@@ -15,7 +15,9 @@ export const DEFAULT_DRAG_STATE = {
   newNodeType: null,
   isConnecting: false,
   connectionStart: null,
+  connectionStartOffsetY: null,
   tempConnection: null,
+  cursorPosition: null,
 } as const;
 
 export const CANVAS_CONFIG = {

@@ -26,6 +26,7 @@ export interface Connection {
   id: string;
   from: string;
   to: string;
+  fromOffsetY?: number;
 }
 
 export interface DragState {
@@ -35,7 +36,9 @@ export interface DragState {
   newNodeType: WorkflowNodeType | null;
   isConnecting: boolean;
   connectionStart: string | null;
+  connectionStartOffsetY: number | null;
   tempConnection: { x: number; y: number } | null;
+  cursorPosition: { x: number; y: number } | null;
 }
 
 export interface CanvasState {

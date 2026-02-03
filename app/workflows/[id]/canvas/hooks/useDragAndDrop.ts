@@ -46,11 +46,12 @@ export function useDragAndDrop({
 
   // Iniciar arrastre desde paleta de nodos
   const handleNodeTypeDragStart = useCallback(
-    (nodeType: WorkflowNodeType) => {
+    (nodeType: WorkflowNodeType, e?: React.MouseEvent) => {
       onDragStateChange({
         ...DEFAULT_DRAG_STATE,
         isDragging: true,
         newNodeType: nodeType,
+        cursorPosition: e ? { x: e.clientX, y: e.clientY } : null,
       });
     },
     [onDragStateChange],
@@ -77,6 +78,11 @@ export function useDragAndDrop({
               : node,
           ),
         );
+      } else if (dragState.newNodeType) {
+        onDragStateChange({
+          ...dragState,
+          cursorPosition: { x: e.clientX, y: e.clientY },
+        });
       } else if (dragState.isConnecting && dragState.connectionStart) {
         // Actualizar conexión temporal
         onDragStateChange({

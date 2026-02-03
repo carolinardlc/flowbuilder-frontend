@@ -22,18 +22,20 @@ export function useConnections({
   
   // Iniciar conexión desde un nodo
   const handleStartConnection = useCallback(
-    (nodeId: string) => {
+    (nodeId: string, offsetY?: number) => {
       const startNode = nodes.find((n) => n.id === nodeId);
       if (!startNode) return;
 
       const startX = startNode.x + CANVAS_CONFIG.CONNECTION_OFFSET_X;
-      const startY = startNode.y + CANVAS_CONFIG.CONNECTION_OFFSET_Y;
+      const startY =
+        startNode.y + (offsetY ?? CANVAS_CONFIG.CONNECTION_OFFSET_Y);
 
       onDragStateChange({
         ...DEFAULT_DRAG_STATE,
         isDragging: true,
         isConnecting: true,
         connectionStart: nodeId,
+        connectionStartOffsetY: offsetY ?? CANVAS_CONFIG.CONNECTION_OFFSET_Y,
         tempConnection: { x: startX, y: startY },
       });
     },
@@ -59,6 +61,8 @@ export function useConnections({
           id: `c-${Date.now()}`,
           from: fromId,
           to: toId,
+          fromOffsetY:
+            dragState.connectionStartOffsetY ?? CANVAS_CONFIG.CONNECTION_OFFSET_Y,
         };
 
         onConnectionsChange([...connections, newConnection]);
@@ -89,10 +93,18 @@ export function useConnections({
     [connections, onConnectionsChange],
   );
 
+  const handleDeleteConnection = useCallback(
+    (connectionId: string) => {
+      onConnectionsChange(connections.filter((c) => c.id !== connectionId));
+    },
+    [connections, onConnectionsChange],
+  );
+
   return {
     handleStartConnection,
     handleCompleteConnection,
     handleCancelConnection,
     handleDeleteNode,
+    handleDeleteConnection,
   };
 }
