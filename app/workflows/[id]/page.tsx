@@ -1,5 +1,3 @@
-import Link from "next/link";
-import Layout from "../../components/Layout";
 import WorkflowCanvas from "./_components/WorkflowCanvas";
 
 type WorkflowsDetailProps = {
@@ -10,26 +8,15 @@ export default async function WorkflowsDetail({
   params,
 }: WorkflowsDetailProps) {
   const { id } = await params;
+
+  // Canvas view doesn't use Layout - renders toolbar directly instead of app header
   return (
-    <Layout fullWidth>
-      <section className="canvas-shell">
-        <WorkflowCanvas
-          workflowId={id}
-          actions={
-            <>
-              <Link
-                href={`/workflows/${id}/details`}
-                className="btn-secondary link-button"
-              >
-                Detalles
-              </Link>
-              <Link href="/workflows" className="btn-secondary link-button">
-                Volver a workflows
-              </Link>
-            </>
-          }
-        />
-      </section>
-    </Layout>
+    <div className="app-shell canvas-page">
+      <main className="app-main app-main--wide app-main--no-header">
+        <section className="app-card app-card--wide canvas-shell">
+          <WorkflowCanvas workflowId={id} />
+        </section>
+      </main>
+    </div>
   );
 }
