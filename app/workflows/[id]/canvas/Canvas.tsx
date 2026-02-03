@@ -142,6 +142,93 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     string | null
   >(null);
 
+  // Import/Export state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+
+  // Export workflow as JSON
+  const handleExportJSON = useCallback(() => {
+    const workflowData = {
+      id: workflowId,
+      name: workflowName ?? `Workflow ${workflowId}`,
+      nodes: nodes.map((node) => ({
+        id: node.id,
+        type: node.type,
+        title: node.title,
+        x: node.x,
+        y: node.y,
+        config: node.config,
+      })),
+      connections: connections.map((conn) => ({
+        id: conn.id,
+        from: conn.from,
+        to: conn.to,
+        fromOffsetY: conn.fromOffsetY,
+      })),
+      exportedAt: new Date().toISOString(),
+    };
+
+    const blob = new Blob([JSON.stringify(workflowData, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `workflow-${workflowId}-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [workflowId, workflowName, nodes, connections]);
+
+  // Import workflow from JSON
+  const handleImportJSON = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target?.result as string);
+
+          if (data.nodes && Array.isArray(data.nodes)) {
+            setNodes(data.nodes);
+            // Update next node ID
+            const maxId = Math.max(...data.nodes.map((n: any) => {
+              const numId = parseInt(n.id.replace(/\D/g, ""), 10);
+              return isNaN(numId) ? 0 : numId;
+            }), 0);
+            setNextNodeId(maxId + 1);
+          }
+
+          if (data.connections && Array.isArray(data.connections)) {
+            setConnections(data.connections);
+          }
+
+          // Show saved feedback
+          setSaveStatus("saved");
+          setTimeout(() => setSaveStatus("idle"), 2000);
+        } catch (error) {
+          console.error("Error importing workflow:", error);
+          alert("Error al importar el workflow. El archivo JSON no es válido.");
+        }
+      };
+      reader.readAsText(file);
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+    [setNodes, setConnections],
+  );
+
+  // Trigger file input click
+  const handleImportClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
   // Manejo de eliminación de nodo
   const handleDeleteNodeComplete = (nodeId: string) => {
     handleDeleteNode(nodeId);
@@ -191,11 +278,10 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
           {NODE_TYPE_ARRAY.map((nodeType) => (
             <div
               key={nodeType.type}
-              className={`draggable-node node node-${nodeType.type.toLowerCase()} ${
-                dragState.isDragging && dragState.newNodeType === nodeType.type
-                  ? "draggable-node-active"
-                  : ""
-              }`}
+              className={`draggable-node node node-${nodeType.type.toLowerCase()} ${dragState.isDragging && dragState.newNodeType === nodeType.type
+                ? "draggable-node-active"
+                : ""
+                }`}
               onMouseDown={(e) => handleNodeTypeDragStart(nodeType.type, e)}
               style={{ cursor: "grab", marginBottom: "8px" }}
             >
@@ -209,17 +295,185 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
 
       {/* Canvas principal */}
       <section className="canvas-stage">
-        <div className="canvas-toolbar">
-          <div>
-            <p className="hero-kicker">Workflow</p>
-            <h2 className="workflows-title">
-              {workflowName ?? `Workflow ${workflowId}`}
-            </h2>
-            <p className="workflows-subtitle">Vista de canvas</p>
+        <div className="canvas-toolbar" style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "10px 16px",
+          background: "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)",
+          borderRadius: "16px",
+          marginBottom: "12px",
+          boxShadow: "0 2px 12px rgba(167, 139, 250, 0.25)",
+        }}>
+          {/* Left section - Back arrow and breadcrumb */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <a
+              href="/workflows"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "36px",
+                height: "36px",
+                borderRadius: "10px",
+                background: "rgba(255, 255, 255, 0.25)",
+                backdropFilter: "blur(4px)",
+                color: "#ffffff",
+                textDecoration: "none",
+                transition: "all 150ms ease",
+              }}
+            >
+              {/* Arrow Left SVG Icon */}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+            </a>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ color: "rgba(255, 255, 255, 0.75)", fontSize: "13px", fontWeight: 500 }}>
+                Workflows
+              </span>
+              <span style={{ color: "rgba(255, 255, 255, 0.5)", fontSize: "13px" }}>/</span>
+              <span style={{ color: "#ffffff", fontWeight: 600, fontSize: "14px" }}>
+                {workflowName ?? `Workflow ${workflowId}`}
+              </span>
+            </div>
           </div>
-          <div className="canvas-actions">
-            {actions}
-            <span className="canvas-badge">Solo lectura</span>
+
+          {/* Center section - Status */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            color: "rgba(255, 255, 255, 0.85)",
+            fontSize: "13px",
+            fontWeight: 500,
+          }}>
+            {saveStatus === "saved" ? (
+              <>
+                {/* Check SVG Icon */}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                <span>Importado correctamente</span>
+              </>
+            ) : (
+              <span>Auto-guardado</span>
+            )}
+          </div>
+
+          {/* Right section - Actions */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {/* Hidden file input */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImportJSON}
+              accept=".json"
+              style={{ display: "none" }}
+            />
+
+            {/* Import button */}
+            <button
+              onClick={handleImportClick}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "8px 14px",
+                borderRadius: "10px",
+                border: "1px solid rgba(255, 255, 255, 0.35)",
+                background: "rgba(255, 255, 255, 0.2)",
+                backdropFilter: "blur(4px)",
+                color: "#ffffff",
+                fontSize: "13px",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 150ms ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.3)";
+                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.5)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
+                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.35)";
+              }}
+            >
+              {/* Upload SVG Icon */}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+              </svg>
+              Importar
+            </button>
+
+            {/* Export button */}
+            <button
+              onClick={handleExportJSON}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "8px 14px",
+                borderRadius: "10px",
+                border: "1px solid rgba(255, 255, 255, 0.35)",
+                background: "rgba(255, 255, 255, 0.2)",
+                backdropFilter: "blur(4px)",
+                color: "#ffffff",
+                fontSize: "13px",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 150ms ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.3)";
+                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.5)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)";
+                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.35)";
+              }}
+            >
+              {/* Download SVG Icon */}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+              </svg>
+              Exportar JSON
+            </button>
+
+            {/* Save button */}
+            <button
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "8px 16px",
+                borderRadius: "10px",
+                border: "none",
+                background: "#34d399",
+                color: "#064e3b",
+                fontSize: "13px",
+                fontWeight: 700,
+                cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(52, 211, 153, 0.4)",
+                transition: "all 150ms ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-1px)";
+                e.currentTarget.style.boxShadow = "0 4px 14px rgba(52, 211, 153, 0.5)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(52, 211, 153, 0.4)";
+              }}
+            >
+              {/* Save/Disk SVG Icon */}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              Guardar
+            </button>
           </div>
         </div>
 

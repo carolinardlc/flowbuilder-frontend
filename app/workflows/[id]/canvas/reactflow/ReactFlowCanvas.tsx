@@ -119,6 +119,13 @@ function ReactFlowCanvasInner() {
   const [validationReport, setValidationReport] =
     useState<ValidationReport | null>(null);
 
+  // Edge context menu state for right-click delete functionality
+  const [edgeContextMenu, setEdgeContextMenu] = useState<{
+    edgeId: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
   // Save indicators drive the toolbar status badge.
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -571,6 +578,31 @@ function ReactFlowCanvasInner() {
     setShowValidation(true);
   }, [buildWorkflowPayload]);
 
+  // Handle right-click on edge to show context menu
+  const onEdgeContextMenu = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      event.preventDefault();
+      setEdgeContextMenu({
+        edgeId: edge.id,
+        x: event.clientX,
+        y: event.clientY,
+      });
+    },
+    []
+  );
+
+  // Delete edge from context menu
+  const handleDeleteEdge = useCallback(() => {
+    if (!edgeContextMenu) return;
+    setEdges((prev) => prev.filter((edge) => edge.id !== edgeContextMenu.edgeId));
+    setEdgeContextMenu(null);
+  }, [edgeContextMenu, setEdges]);
+
+  // Close context menu when clicking elsewhere
+  const closeEdgeContextMenu = useCallback(() => {
+    setEdgeContextMenu(null);
+  }, []);
+
   /**
    * Handles drag over event for the canvas area.
    * Required to enable drop functionality.
@@ -732,7 +764,11 @@ function ReactFlowCanvasInner() {
               onConnect={handleConnect}
               onInit={setReactFlowInstance}
               onNodeClick={(_, node) => setSelectedNodeId(node.id)}
-              onPaneClick={() => setSelectedNodeId(null)}
+              onPaneClick={() => {
+                setSelectedNodeId(null);
+                closeEdgeContextMenu();
+              }}
+              onEdgeContextMenu={onEdgeContextMenu}
               nodeTypes={nodeTypes}
             >
               <Background
@@ -811,6 +847,60 @@ function ReactFlowCanvasInner() {
           />
         ) : null
       }
+
+      {/* Edge Context Menu - appears on right-click on edges */}
+      {edgeContextMenu && (
+        <div
+          className="rf-edge-context-menu"
+          style={{
+            position: "fixed",
+            top: edgeContextMenu.y,
+            left: edgeContextMenu.x,
+            zIndex: 1000,
+            background: "#ffffff",
+            borderRadius: "8px",
+            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.15)",
+            border: "1px solid rgba(74, 74, 74, 0.12)",
+            overflow: "hidden",
+            minWidth: "140px",
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleDeleteEdge}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              width: "100%",
+              padding: "10px 14px",
+              border: "none",
+              background: "transparent",
+              color: "#ef4444",
+              fontSize: "13px",
+              fontWeight: 500,
+              cursor: "pointer",
+              textAlign: "left",
+              transition: "background 150ms ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(239, 68, 68, 0.08)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+            }}
+          >
+            {/* Trash SVG Icon */}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+              <line x1="10" y1="11" x2="10" y2="17" />
+              <line x1="14" y1="11" x2="14" y2="17" />
+            </svg>
+            Eliminar conexión
+          </button>
+        </div>
+      )}
     </section >
   );
 }
