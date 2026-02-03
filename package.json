@@ -10,6 +10,7 @@
     "postbuild": "tailwindcss build"
   },
   "dependencies": {
+    "lucide-react": "^0.563.0",
     "next": "16.1.4",
     "postcss-loader": "^8.2.0",
     "react": "19.2.3",
