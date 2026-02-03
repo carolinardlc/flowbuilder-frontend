@@ -430,19 +430,19 @@ body {
   margin: 0;
   width: 100%;
   max-width: 100vw;
-  padding: 0;
-  height: 100vh;
+  padding: 0 0.5rem;
+  /* Ensure shell fills available height for ReactFlow */
+  height: calc(100vh - 6rem);
   min-height: 600px;
-  background: var(--sand);
 }
 
 .canvas-layout {
   display: grid;
-  grid-template-columns: 180px minmax(0, 1fr) 240px;
-  gap: 0;
+  grid-template-columns: 220px minmax(0, 1fr) 280px;
+  gap: 1rem;
   align-items: stretch;
-  flex: 1;
-  min-height: 0;
+  /* Fill the entire canvas shell height */
+  height: 100%;
 }
 
 .canvas-panel {
@@ -1014,6 +1014,638 @@ body {
   font-size: 0.75rem;
   color: rgba(74, 74, 74, 0.45);
   line-height: 1.4;
+}
+
+/* Toolbar tweaks keep title and actions readable on smaller screens. */
+.rf-toolbar {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.rf-toolbar-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.rf-toolbar-actions {
+  gap: 0.6rem;
+}
+
+/* Catalog styling borrows the destination palette for clean cards. */
+.rf-search-input {
+  font-size: 0.85rem;
+}
+
+.rf-catalog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rf-catalog-card {
+  appearance: none;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(74, 74, 74, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 16px rgba(74, 74, 74, 0.08);
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+}
+
+/* Button hover keeps a soft lift without leaving the destination aesthetic. */
+.rf-catalog-card:hover {
+  border-color: rgba(98, 201, 169, 0.45);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 18px rgba(74, 74, 74, 0.12);
+}
+
+/* Meta wrapper keeps title and description aligned in a column. */
+.rf-catalog-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.rf-catalog-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 0.75rem;
+  background: rgba(158, 139, 255, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.rf-catalog-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.rf-catalog-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.rf-catalog-desc {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: rgba(74, 74, 74, 0.7);
+}
+
+.rf-badge {
+  font-size: 0.65rem;
+  background: rgba(98, 201, 169, 0.25);
+}
+
+.rf-panel-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: rgba(74, 74, 74, 0.6);
+}
+
+/* Inline feedback messages for catalog actions. */
+.rf-catalog-alert {
+  margin: 0;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.75rem;
+  background: rgba(245, 182, 165, 0.35);
+  color: #c45757;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Empty state keeps search feedback unobtrusive. */
+.rf-catalog-empty {
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgba(74, 74, 74, 0.55);
+}
+
+/* Custom node styling keeps ReactFlow nodes aligned with destination UI. */
+.rf-node {
+  min-width: 190px;
+  padding: 0.75rem 0.85rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(74, 74, 74, 0.12);
+  background: var(--card);
+  box-shadow: 0 12px 22px rgba(74, 74, 74, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+}
+
+.rf-node-selected {
+  outline: 2px solid rgba(98, 201, 169, 0.55);
+  outline-offset: 2px;
+}
+
+.rf-node-start {
+  background: rgba(98, 201, 169, 0.18);
+}
+
+.rf-node-http_request {
+  background: rgba(158, 139, 255, 0.12);
+}
+
+.rf-node-command {
+  background: rgba(245, 182, 165, 0.2);
+}
+
+.rf-node-conditional {
+  background: rgba(212, 212, 212, 0.35);
+}
+
+.rf-node-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.rf-node-title {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.rf-node-type {
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(74, 74, 74, 0.6);
+}
+
+.rf-node-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rf-node-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.rf-node-badge--ok {
+  background: rgba(98, 201, 169, 0.25);
+  color: var(--ink);
+}
+
+.rf-node-badge--warn {
+  background: rgba(245, 182, 165, 0.3);
+  color: #c45757;
+}
+
+.rf-node-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.rf-node-action {
+  border: 1px solid rgba(74, 74, 74, 0.2);
+  background: transparent;
+  color: var(--ink);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.rf-node-action--danger {
+  border-color: rgba(217, 108, 108, 0.5);
+  color: #c45757;
+}
+
+/* TRUE/FALSE branch indicators for conditional nodes */
+.rf-node-branches {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.rf-branch {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.rf-branch--true {
+  background: rgba(98, 201, 169, 0.25);
+  color: #3a9a7d;
+}
+
+.rf-branch--false {
+  background: rgba(245, 182, 165, 0.3);
+  color: #c45757;
+}
+
+/* Handles inherit destination colors and remain easy to grab. */
+.rf-handle {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid #9e8bff;
+  background: #ffffff;
+}
+
+.rf-handle-in {
+  border-color: #c7c7d2;
+}
+
+.rf-handle-out {
+  background: #9e8bff;
+  border-color: #9e8bff;
+}
+
+.rf-handle-true {
+  background: #62c9a9;
+  border-color: #62c9a9;
+}
+
+.rf-handle-false {
+  background: #f5b6a5;
+  border-color: #f5b6a5;
+}
+
+/* Canvas container ensures ReactFlow fills the scroll area. */
+.rf-canvas-scroll {
+  position: relative;
+}
+
+.rf-canvas-scroll .react-flow {
+  width: 100%;
+  height: 100%;
+}
+
+/* ReactFlow controls inherit the destination card-like styling. */
+.rf-canvas-scroll .react-flow__controls {
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 10px 18px rgba(74, 74, 74, 0.12);
+}
+
+.rf-canvas-scroll .react-flow__controls-button {
+  background: var(--rf-control-bg);
+  border-color: var(--rf-control-border);
+  color: var(--ink);
+}
+
+/* The minimap uses the same soft card treatment as other panels. */
+.rf-canvas-scroll .react-flow__minimap {
+  background: var(--rf-minimap-bg);
+  border: 1px solid var(--rf-control-border);
+  border-radius: 0.85rem;
+  box-shadow: 0 10px 18px rgba(74, 74, 74, 0.12);
+}
+
+.rf-canvas-placeholder {
+  position: absolute;
+  inset: auto 1.5rem 1.5rem auto;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  font-size: 0.75rem;
+  color: rgba(74, 74, 74, 0.7);
+  box-shadow: 0 6px 14px rgba(74, 74, 74, 0.12);
+}
+
+/* Tabs are simple buttons matching the destination style. */
+.rf-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(74, 74, 74, 0.1);
+  padding-bottom: 0.5rem;
+}
+
+.rf-tab {
+  border: none;
+  background: transparent;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(74, 74, 74, 0.6);
+  cursor: pointer;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+}
+
+.rf-tab-active {
+  background: rgba(98, 201, 169, 0.2);
+  color: var(--ink);
+}
+
+.rf-inspector-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* Inspector-specific helpers for forms and sections. */
+.rf-inspector-subtitle {
+  margin: 0;
+  font-size: 0.75rem;
+  color: rgba(74, 74, 74, 0.6);
+}
+
+.rf-inspector-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.rf-inspector-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.rf-inspector-note {
+  margin: 0;
+  font-size: 0.75rem;
+  color: rgba(74, 74, 74, 0.6);
+}
+
+/* Form grid keeps inputs aligned in a compact layout. */
+.rf-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.rf-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.rf-select {
+  appearance: none;
+}
+
+/* Key/value editor styling for headers, params, mappings, etc. */
+.rf-inspector-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rf-inspector-label {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(74, 74, 74, 0.5);
+}
+
+.rf-kv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rf-kv-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.rf-kv-input {
+  font-size: 0.85rem;
+}
+
+.rf-kv-remove {
+  border: none;
+  background: rgba(245, 182, 165, 0.35);
+  color: #c45757;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+/* Import dialog error message keeps feedback visible without extra UI libs. */
+.rf-import-error {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #c45757;
+}
+
+/* Validation panel styles keep the bottom drawer aligned with destination cards. */
+.rf-validation-panel {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 60;
+  background: var(--card);
+  border-radius: 1.5rem;
+  border: 1px solid rgba(74, 74, 74, 0.12);
+  box-shadow: 0 18px 32px rgba(74, 74, 74, 0.2);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rf-validation-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.rf-validation-subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: rgba(74, 74, 74, 0.6);
+}
+
+.rf-validation-counts {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.rf-validation-pill {
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.rf-validation-pill--error {
+  background: rgba(217, 108, 108, 0.2);
+  color: #c45757;
+}
+
+.rf-validation-pill--warning {
+  background: rgba(245, 182, 165, 0.25);
+  color: #b06a3c;
+}
+
+.rf-validation-pill--info {
+  background: rgba(158, 139, 255, 0.2);
+  color: #5c4bd6;
+}
+
+.rf-validation-close {
+  white-space: nowrap;
+}
+
+.rf-validation-body {
+  max-height: 240px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.rf-validation-empty {
+  margin: 0;
+  color: rgba(74, 74, 74, 0.6);
+  font-size: 0.85rem;
+}
+
+.rf-issue {
+  border-radius: 1rem;
+  border: 1px solid rgba(74, 74, 74, 0.1);
+  background: rgba(249, 231, 212, 0.35);
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rf-issue-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.rf-issue-badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.rf-issue-badge--error {
+  background: rgba(217, 108, 108, 0.2);
+  color: #c45757;
+}
+
+.rf-issue-badge--warning {
+  background: rgba(245, 182, 165, 0.25);
+  color: #b06a3c;
+}
+
+.rf-issue-badge--info {
+  background: rgba(158, 139, 255, 0.2);
+  color: #5c4bd6;
+}
+
+.rf-issue-node {
+  font-size: 0.7rem;
+  color: rgba(74, 74, 74, 0.6);
+}
+
+.rf-issue-message {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(74, 74, 74, 0.85);
+}
+
+.rf-issue-focus {
+  align-self: flex-start;
+  border: none;
+  background: rgba(98, 201, 169, 0.2);
+  color: var(--ink);
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ReactFlow scaffold overrides keep the layout aligned with the destination style. */
+.rf-canvas-shell {
+  padding: 0;
+}
+
+/* Local CSS variables keep ReactFlow colors tied to the destination palette. */
+.rf-canvas-scroll {
+  --rf-grid: rgba(74, 74, 74, 0.18);
+  --rf-control-bg: rgba(255, 255, 255, 0.95);
+  --rf-control-border: rgba(74, 74, 74, 0.12);
+  --rf-minimap-bg: rgba(255, 255, 255, 0.9);
+}
+
+/**
+ * CRITICAL: ReactFlow requires explicit height on its container.
+ * Without this, the canvas will collapse to 0 height and nodes won't render.
+ */
+.rf-canvas-scroll {
+  position: relative;
+  height: 100%;
+  min-height: 500px;
+  flex: 1;
+}
+
+/* Ensure ReactFlow fills its container completely */
+.rf-canvas-scroll .react-flow {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* Canvas stage needs to be a flex container with full height */
+.rf-canvas-stage {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* Ensure panels align to the top and stretch with the canvas area. */
+.rf-canvas-layout .canvas-panel {
+  margin-top: 0;
+  align-self: stretch;
+  height: 100%;
+}
+
+/* Inner panel wrapper provides consistent spacing for new sections. */
+.rf-panel-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1rem;
 }
 
 /* Toolbar tweaks keep title and actions readable on smaller screens. */
