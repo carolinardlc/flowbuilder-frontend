@@ -638,56 +638,63 @@ function ReactFlowCanvasInner() {
 
   return (
     <section className="canvas-shell rf-canvas-shell">
-      {/* 3-panel layout: catalog, canvas, inspector. */}
+      {/* Full-width toolbar header - spans entire page width */}
+      <header className="rf-toolbar-header">
+        <div className="rf-toolbar-left">
+          <a href="/workflows" className="rf-toolbar-back" title="Volver a workflows">
+            ←
+          </a>
+          <div className="rf-toolbar-breadcrumb">
+            <a href="/workflows">Workflows</a>
+            <span className="rf-breadcrumb-sep">&gt;</span>
+            <span className="rf-toolbar-name">{workflowMeta.name || "Sin nombre"}</span>
+          </div>
+        </div>
+
+        <div className="rf-toolbar-center">
+          {saveStatus}
+        </div>
+
+        <div className="rf-toolbar-actions">
+          <button
+            className="rf-action-btn"
+            type="button"
+            onClick={handleValidate}
+          >
+            <span className="rf-action-icon">✓</span>
+            Validar
+          </button>
+          <button
+            className="rf-action-btn"
+            type="button"
+            onClick={() => setShowImportDialog(true)}
+          >
+            <span className="rf-action-icon">↓</span>
+            Importar
+          </button>
+          <button
+            className="rf-action-btn"
+            type="button"
+            onClick={handleExport}
+          >
+            <span className="rf-action-icon">↑</span>
+            Exportar
+          </button>
+          <button className="rf-action-btn rf-action-primary" type="button" onClick={handleSave}>
+            Guardar
+          </button>
+        </div>
+      </header>
+
+      {/* 3-panel layout: catalog, canvas, inspector */}
       <div className="canvas-layout rf-canvas-layout">
+        {/* Left panel: Node Catalog */}
         <aside className="canvas-panel rf-panel rf-catalog-panel">
-          {/* Node catalog now handles search and START uniqueness. */}
           <NodeCatalog onAddNode={handleAddNode} hasStartNode={hasStartNode} />
         </aside>
 
+        {/* Center: Canvas area */}
         <section className="canvas-stage rf-canvas-stage">
-          {/* Toolbar mirrors the reference UX but uses destination styles. */}
-          <div className="canvas-toolbar rf-toolbar">
-            <div className="rf-toolbar-left">
-              <p className="hero-kicker">
-                Workflows / {workflowMeta.name || "Canvas"}
-              </p>
-              <h2 className="workflows-title">{workflowMeta.name}</h2>
-              <p className="workflows-subtitle">
-                {workflowMeta.description ||
-                  "Diseña tu flujo con el lienzo interactivo."}
-              </p>
-            </div>
-            <div className="canvas-actions rf-toolbar-actions">
-              <span className="canvas-badge">{saveStatus}</span>
-              <button
-                className="btn-secondary"
-                type="button"
-                onClick={handleValidate}
-              >
-                Validar
-              </button>
-              <button
-                className="btn-secondary"
-                type="button"
-                onClick={() => setShowImportDialog(true)}
-              >
-                Importar
-              </button>
-              <button
-                className="btn-secondary"
-                type="button"
-                onClick={handleExport}
-              >
-                Exportar
-              </button>
-              <button className="btn-primary" type="button" onClick={handleSave}>
-                Guardar
-              </button>
-            </div>
-          </div>
-
-          {/* Canvas container with drag-drop support and ref for positioning */}
           <div
             className="canvas-scroll rf-canvas-scroll"
             ref={reactFlowWrapper}
@@ -695,36 +702,27 @@ function ReactFlowCanvasInner() {
             onDrop={onDrop}
           >
             <ReactFlow
-              // The canvas now renders the nodes created from the catalog.
               nodes={nodes}
               edges={edges}
-              // fitView keeps the empty canvas centered for a cleaner initial view.
               fitView
-              // The className allows us to style ReactFlow with destination tokens.
               className="rf-reactflow"
-              // ReactFlow handlers keep the UX responsive to drag updates.
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
               onConnect={handleConnect}
               onInit={setReactFlowInstance}
-              // Click handlers keep the inspector in sync with selection.
               onNodeClick={(_, node) => setSelectedNodeId(node.id)}
               onPaneClick={() => setSelectedNodeId(null)}
               nodeTypes={nodeTypes}
             >
-              {/* Dotted background uses destination CSS variables for color. */}
               <Background
                 variant={BackgroundVariant.Dots}
                 gap={20}
                 size={1}
                 color="var(--rf-grid)"
               />
-              {/* Controls are anchored bottom-left to match the target UX. */}
               <Controls position="bottom-left" />
-              {/* Minimap is anchored bottom-right and styled via CSS. */}
               <MiniMap position="bottom-right" className="rf-minimap" />
             </ReactFlow>
-            {/* Keep the placeholder visible only when the canvas has no nodes. */}
             {nodes.length === 0 ? (
               <div className="rf-canvas-placeholder">
                 Canvas vacío: aquí vivirá ReactFlow con nodos reales.
@@ -733,8 +731,8 @@ function ReactFlowCanvasInner() {
           </div>
         </section>
 
+        {/* Right panel: Node Inspector */}
         <aside className="canvas-panel canvas-panel-right rf-panel rf-inspector-panel">
-          {/* The inspector reflects the selected node and updates its config. */}
           <NodeInspector
             node={selectedNode}
             onUpdateConfig={handleUpdateNodeConfig}
@@ -742,52 +740,57 @@ function ReactFlowCanvasInner() {
         </aside>
       </div>
 
+
       {/* Import dialog keeps JSON input self-contained and uses existing modal styles. */}
-      {showImportDialog ? (
-        <div className="modal-overlay" role="dialog" aria-modal="true">
-          <div className="modal-card">
-            <h2 className="workflows-title">Importar workflow</h2>
-            <p className="workflows-subtitle">
-              Pega el JSON del workflow para reemplazar el canvas actual.
-            </p>
-            <textarea
-              className="form-textarea"
-              rows={12}
-              placeholder='{"name": "Mi workflow", "nodes": [], "edges": []}'
-              value={importJson}
-              onChange={(event) => setImportJson(event.target.value)}
-            />
-            {importError ? (
-              <p className="rf-import-error">{importError}</p>
-            ) : null}
-            <div className="form-actions">
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => {
-                  setShowImportDialog(false);
-                  setImportError(null);
-                }}
-              >
-                Cancelar
-              </button>
-              <button type="button" className="btn-primary" onClick={handleImport}>
-                Importar
-              </button>
+      {
+        showImportDialog ? (
+          <div className="modal-overlay" role="dialog" aria-modal="true">
+            <div className="modal-card">
+              <h2 className="workflows-title">Importar workflow</h2>
+              <p className="workflows-subtitle">
+                Pega el JSON del workflow para reemplazar el canvas actual.
+              </p>
+              <textarea
+                className="form-textarea"
+                rows={12}
+                placeholder='{"name": "Mi workflow", "nodes": [], "edges": []}'
+                value={importJson}
+                onChange={(event) => setImportJson(event.target.value)}
+              />
+              {importError ? (
+                <p className="rf-import-error">{importError}</p>
+              ) : null}
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => {
+                    setShowImportDialog(false);
+                    setImportError(null);
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button type="button" className="btn-primary" onClick={handleImport}>
+                  Importar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      ) : null}
+        ) : null
+      }
 
       {/* Validation panel appears at the bottom when requested. */}
-      {showValidation && validationReport ? (
-        <ValidationPanel
-          report={validationReport}
-          onClose={() => setShowValidation(false)}
-          onFocusNode={handleFocusNode}
-        />
-      ) : null}
-    </section>
+      {
+        showValidation && validationReport ? (
+          <ValidationPanel
+            report={validationReport}
+            onClose={() => setShowValidation(false)}
+            onFocusNode={handleFocusNode}
+          />
+        ) : null
+      }
+    </section >
   );
 }
 
