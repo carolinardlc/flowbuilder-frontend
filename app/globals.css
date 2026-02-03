@@ -673,9 +673,9 @@ body {
   height: 100%;
 }
 
-/* Panels - light mode with white background */
+/* Panels - light mode with solid white background */
 .canvas-panel {
-  background: rgba(255, 255, 255, 0.95);
+  background: #ffffff;
   padding: 1rem;
   border: none;
   box-shadow: none;
@@ -767,6 +767,7 @@ body {
 
 .rf-toolbar-left {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.75rem;
 }
@@ -817,8 +818,9 @@ body {
 }
 
 .rf-toolbar-center {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .rf-toolbar-actions {
@@ -1372,13 +1374,7 @@ body {
 /* Toolbar tweaks keep title and actions readable on smaller screens. */
 .rf-toolbar {
   flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.rf-toolbar-left {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+  align-items: center;
 }
 
 .rf-toolbar-actions {
@@ -2004,13 +2000,7 @@ body {
 /* Toolbar tweaks keep title and actions readable on smaller screens. */
 .rf-toolbar {
   flex-wrap: wrap;
-  align-items: flex-start;
-}
-
-.rf-toolbar-left {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+  align-items: center;
 }
 
 .rf-toolbar-actions {
