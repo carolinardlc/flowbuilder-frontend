@@ -42,7 +42,7 @@ export const NODE_TYPES = {
     color: "#f5b6a5",
     bgColor: "rgba(245, 182, 165, 0.2)",
     icon: "🌐",
-    label: "HTTP",
+    label: "Solicitar información de un juego",
     description: "Solicitud HTTP externa",
   },
 } as const;

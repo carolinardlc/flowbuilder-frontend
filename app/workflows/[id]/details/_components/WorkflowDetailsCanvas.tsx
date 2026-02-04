@@ -22,6 +22,7 @@ const NODE_TYPE_LABELS: Record<WorkflowNodeType, string> = {
   ACTION: "Acción",
   CONDITIONAL: "Condicional",
   END: "Fin",
+  HTTP: "HTTP",
 };
 
 export default function WorkflowDetailsCanvas({
@@ -56,7 +57,7 @@ export default function WorkflowDetailsCanvas({
         acc[node.type] = (acc[node.type] ?? 0) + 1;
         return acc;
       },
-      { START: 0, ACTION: 0, CONDITIONAL: 0, END: 0 },
+      { START: 0, ACTION: 0, CONDITIONAL: 0, END: 0, HTTP: 0 },
     );
 
     return {
@@ -120,7 +121,12 @@ export default function WorkflowDetailsCanvas({
               );
               if (!from || !to) return null;
               return (
-                <WorkflowConnection key={connection.id} from={from} to={to} />
+                <WorkflowConnection
+                  key={connection.id}
+                  id={connection.id}
+                  from={from}
+                  to={to}
+                />
               );
             })}
           </svg>

@@ -164,8 +164,8 @@ useEffect(() => {
                 </select>
               </div>
 
-              {config.config.actionType === "http_request" && (
-                <>
+              {node.type === "HTTP" && (
+                <div style={{ display: "none" }}>
                   <div className="form-group">
                     <label className="form-label">URL</label>
                     <input
@@ -205,7 +205,7 @@ useEffect(() => {
                       rows={4}
                     />
                   </div>
-                </>
+                </div>
               )}
             </div>
           )}

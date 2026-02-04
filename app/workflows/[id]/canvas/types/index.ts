@@ -17,7 +17,12 @@ export interface WorkflowNodeData {
   y: number;
   config?: {
     welcomeMessage?: string;
-    actionType?: "http_request" | "send_email" | "database_query" | "webhook";
+    actionType?:
+      | "The Legend of Zelda: Breath of the Wild"
+      | "Elden Ring"
+      | "Hollow Knight"
+      | "Street Fighter 6"
+      | "Final Fantasy VII Rebirth";
     url?: string;
     method?: "GET" | "POST" | "PUT" | "DELETE";
     body?: string;
@@ -65,7 +70,12 @@ export interface NodeConfig {
   type: WorkflowNodeType;
   config: {
     welcomeMessage?: string;
-    actionType?: "http_request" | "send_email" | "database_query" | "webhook";
+    actionType?:
+      | "The Legend of Zelda: Breath of the Wild"
+      | "Elden Ring"
+      | "Hollow Knight"
+      | "Street Fighter 6"
+      | "Final Fantasy VII Rebirth";
     url?: string;
     method?: "GET" | "POST" | "PUT" | "DELETE";
     body?: string;
