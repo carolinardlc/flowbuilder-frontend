@@ -49,6 +49,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     handleCloseConfig,
     handleSaveConfig,
     handleDeleteNode,
+    handleDuplicateNode,
   } = useCanvasState();
 
   // Funciones memorizadas para localStorage
@@ -152,6 +153,13 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     }
   };
 
+  // Manejo de duplicación de nodo
+  const handleDuplicateNodeComplete = (nodeId: string) => {
+    const newNodeId = `node-${nextNodeId}`;
+    handleDuplicateNode(nodeId, newNodeId);
+    setNextNodeId(nextNodeId + 1);
+  };
+
   useEffect(() => {
     return () => {
       if (dropTimeoutRef.current) {
@@ -192,11 +200,10 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
           {NODE_TYPE_ARRAY.map((nodeType) => (
             <div
               key={nodeType.type}
-              className={`draggable-node node node-${nodeType.type.toLowerCase()} ${
-                dragState.isDragging && dragState.newNodeType === nodeType.type
+              className={`draggable-node node node-${nodeType.type.toLowerCase()} ${dragState.isDragging && dragState.newNodeType === nodeType.type
                   ? "draggable-node-active"
                   : ""
-              }`}
+                }`}
               onMouseDown={(e) => handleNodeTypeDragStart(nodeType.type, e)}
               style={{ cursor: "grab", marginBottom: "8px" }}
             >
@@ -408,6 +415,15 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
               </button>
             </div>
 
+            {selectedNode.type !== "START" && (
+              <button
+                className="btn-primary"
+                style={{ marginTop: "12px", width: "100%" }}
+                onClick={() => handleDuplicateNodeComplete(selectedNode.id)}
+              >
+                Duplicar nodo
+              </button>
+            )}
             <button
               className="btn-primary btn-danger"
               style={{ marginTop: "12px", width: "100%" }}

@@ -32,10 +32,10 @@ export function useCanvasState() {
       const updatedNodes = prev.map((node) =>
         node.id === config.id
           ? {
-              ...node,
-              title: config.title,
-              config: config.config,
-            }
+            ...node,
+            title: config.title,
+            config: config.config,
+          }
           : node,
       );
       console.log('Canvas: Nodos actualizados:', updatedNodes);
@@ -56,6 +56,23 @@ export function useCanvasState() {
     }
   }, [selectedNodeId]);
 
+  // Duplicar nodo
+  const handleDuplicateNode = useCallback((nodeId: string, newNodeId: string) => {
+    const nodeToDuplicate = nodes.find((n) => n.id === nodeId);
+    if (!nodeToDuplicate) return;
+
+    const duplicatedNode: WorkflowNodeData = {
+      ...nodeToDuplicate,
+      id: newNodeId,
+      title: `${nodeToDuplicate.title} (copia)`,
+      x: nodeToDuplicate.x + 50,
+      y: nodeToDuplicate.y + 50,
+    };
+
+    setNodes((prev) => [...prev, duplicatedNode]);
+    setSelectedNodeId(newNodeId);
+  }, [nodes]);
+
   return {
     // Estado
     nodes,
@@ -64,18 +81,19 @@ export function useCanvasState() {
     selectedNodeId,
     isConfigPanelOpen,
     dragState,
-    
+
     // Setters
     setNodes,
     setConnections,
     setSelectedNodeId,
     setIsConfigPanelOpen,
     setDragState,
-    
+
     // Manejadores de configuración
     handleOpenConfig,
     handleCloseConfig,
     handleSaveConfig,
     handleDeleteNode,
+    handleDuplicateNode,
   };
 }
