@@ -113,7 +113,7 @@ useEffect(() => {
 
         <div className="config-panel-body">
           <div className="form-group">
-            <label className="form-label">Nombre del Juego a seleccionar</label>
+            <label className="form-label">Nombre de la solicitud</label>
             <input
               type="text"
               className="form-input"
@@ -156,9 +156,11 @@ useEffect(() => {
                     updateNestedConfig("actionType", e.target.value)
                   }
                 >
-                  <option value="send_email">Send Email</option>
-                  <option value="database_query">Database Query</option>
-                  <option value="webhook">Webhook</option>
+                  <option value="The Legend of Zelda: Breath of the Wild">The Legend of Zelda: Breath of the Wild</option>
+                  <option value="Elden Ring">Elden Ring</option>
+                  <option value="Hollow Knight">Hollow Knight</option>
+                  <option value="Street Fighter 6">Street Fighter 6</option>
+                  <option value="Final Fantasy VII Rebirth">Final Fantasy VII Rebirth</option>
                 </select>
               </div>
 
