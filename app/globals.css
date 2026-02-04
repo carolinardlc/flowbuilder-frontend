@@ -695,6 +695,28 @@ body {
   top: 68%;
 }
 
+.node-handle-label {
+  position: absolute;
+  right: -46px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #6b5dd6;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  padding: 2px 6px;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.node-handle-label-true {
+  top: 32%;
+}
+
+.node-handle-label-false {
+  top: 68%;
+}
+
 .node-handle:hover {
   transform: translateY(-50%) scale(1.1);
   box-shadow: 0 0 0 6px rgba(158, 139, 255, 0.18);

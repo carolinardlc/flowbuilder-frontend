@@ -107,11 +107,17 @@ export default function WorkflowNode({
                 onMouseDown={handleStartConnectionTop}
                 title="Arrastrar para conectar (ruta 1)"
               />
+              <span className="node-handle-label node-handle-label-true">
+                TRUE
+              </span>
               <div
                 className="node-handle node-handle-out node-handle-out-bottom"
                 onMouseDown={handleStartConnectionBottom}
                 title="Arrastrar para conectar (ruta 2)"
               />
+              <span className="node-handle-label node-handle-label-false">
+                FALSE
+              </span>
             </>
           ) : (
             <div
