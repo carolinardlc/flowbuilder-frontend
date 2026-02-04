@@ -113,7 +113,7 @@ useEffect(() => {
 
         <div className="config-panel-body">
           <div className="form-group">
-            <label className="form-label">Título del Nodo</label>
+            <label className="form-label">Nombre del Juego a seleccionar</label>
             <input
               type="text"
               className="form-input"
