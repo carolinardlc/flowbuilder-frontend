@@ -69,6 +69,7 @@ export function useCanvasState() {
     setNodes,
     setConnections,
     setSelectedNodeId,
+    setIsConfigPanelOpen,
     setDragState,
     
     // Manejadores de configuración

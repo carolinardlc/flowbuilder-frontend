@@ -43,6 +43,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     setNodes,
     setConnections,
     setSelectedNodeId,
+    setIsConfigPanelOpen,
     setDragState,
     handleOpenConfig,
     handleCloseConfig,
@@ -339,8 +340,12 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                 isDragging={dragState.draggedNode === node.id}
                 isJustCreated={node.id === justCreatedNodeId}
                 onSelect={(nodeId) => {
+                  const node = nodes.find((item) => item.id === nodeId);
                   setSelectedNodeId(nodeId);
                   setSelectedConnectionId(null);
+                  if (node?.type === "CONDITIONAL") {
+                    setIsConfigPanelOpen(true);
+                  }
                 }}
                 onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
                 onConnectionClick={

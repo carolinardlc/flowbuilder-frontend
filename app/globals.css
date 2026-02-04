@@ -1060,6 +1060,10 @@ body {
   background: rgba(212, 212, 212, 0.6);
 }
 
+.node-http {
+  background: rgba(245, 182, 165, 0.2);
+}
+
 @media (min-width: 768px) {
   .app-header-inner {
     flex-direction: row;

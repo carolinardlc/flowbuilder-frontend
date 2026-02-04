@@ -138,19 +138,24 @@ useEffect(() => {
             </div>
           )}
 
-          {node.type === "ACTION" && (
+          {(node.type === "ACTION" || node.type === "HTTP") && (
             <div className="config-section">
-              <h4 className="config-section-title">Configuración de Acción</h4>
+              <h4 className="config-section-title">
+                {node.type === "HTTP"
+                  ? "Configuración HTTP"
+                  : "Configuración de Acción"}
+              </h4>
               <div className="form-group">
-                <label className="form-label">Tipo de Acción</label>
+                <label className="form-label">
+                  {node.type === "HTTP" ? "Tipo de HTTP" : "Tipo de Acción"}
+                </label>
                 <select
                   className="form-select"
-                  value={config.config.actionType || "http_request"}
+                  value={config.config.actionType || "send_email"}
                   onChange={(e) =>
                     updateNestedConfig("actionType", e.target.value)
                   }
                 >
-                  <option value="http_request">HTTP Request</option>
                   <option value="send_email">Send Email</option>
                   <option value="database_query">Database Query</option>
                   <option value="webhook">Webhook</option>
@@ -200,6 +205,57 @@ useEffect(() => {
                   </div>
                 </>
               )}
+            </div>
+          )}
+
+          {node.type === "CONDITIONAL" && (
+            <div className="config-section">
+              <h4 className="config-section-title">
+                Configuración de Condición
+              </h4>
+              <div className="form-group">
+                <label className="form-label">Número 1</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={config.config.condition?.number1 ?? ""}
+                  onChange={(e) =>
+                    updateNestedConfig("condition.number1", e.target.value)
+                  }
+                  placeholder="Ej: 10"
+                  step="any"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Operador</label>
+                <select
+                  className="form-select"
+                  value={config.config.condition?.operator ?? "=="}
+                  onChange={(e) =>
+                    updateNestedConfig("condition.operator", e.target.value)
+                  }
+                >
+                  <option value="==">==</option>
+                  <option value="!=">!=</option>
+                  <option value=">=">&gt;=</option>
+                  <option value=">">&gt;</option>
+                  <option value="<=">&lt;=</option>
+                  <option value="<">&lt;</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Número 2</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={config.config.condition?.number2 ?? ""}
+                  onChange={(e) =>
+                    updateNestedConfig("condition.number2", e.target.value)
+                  }
+                  placeholder="Ej: 20"
+                  step="any"
+                />
+              </div>
             </div>
           )}
 

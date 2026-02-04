@@ -2,7 +2,12 @@
  * Tipos centralizados para el Workflow Canvas
  */
 
-export type WorkflowNodeType = "START" | "ACTION" | "CONDITIONAL" | "END";
+export type WorkflowNodeType =
+  | "START"
+  | "ACTION"
+  | "CONDITIONAL"
+  | "END"
+  | "HTTP";
 
 export interface WorkflowNodeData {
   id: string;
@@ -17,6 +22,11 @@ export interface WorkflowNodeData {
     method?: "GET" | "POST" | "PUT" | "DELETE";
     body?: string;
     conditionType?: "if_else" | "switch" | "filter";
+    condition?: {
+      number1?: string;
+      operator?: "==" | "!=" | ">=" | ">" | "<=" | "<";
+      number2?: string;
+    };
     outputType?: "success" | "error" | "notification";
     message?: string;
   };
@@ -60,6 +70,11 @@ export interface NodeConfig {
     method?: "GET" | "POST" | "PUT" | "DELETE";
     body?: string;
     conditionType?: "if_else" | "switch" | "filter";
+    condition?: {
+      number1?: string;
+      operator?: "==" | "!=" | ">=" | ">" | "<=" | "<";
+      number2?: string;
+    };
     outputType?: "success" | "error" | "notification";
     message?: string;
   };
