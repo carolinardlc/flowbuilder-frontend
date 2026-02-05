@@ -23,11 +23,37 @@ export default function NodeConfigPanel({
   onSave,
   isOpen,
 }: NodeConfigPanelProps) {
+  const normalizeConfig = useCallback(
+    (nodeType: WorkflowNodeData["type"], raw: NodeConfig["config"]) => {
+      if (nodeType === "ACTION") {
+        return {
+          ...raw,
+          actionType: raw.actionType ?? "Acción 1",
+          number: raw.number ?? "",
+        };
+      }
+
+      if (nodeType === "HTTP") {
+        return {
+          ...raw,
+          actionType:
+            raw.actionType ?? "The Legend of Zelda: Breath of the Wild",
+          url: raw.url ?? "",
+          method: raw.method ?? "GET",
+          body: raw.body ?? "",
+        };
+      }
+
+      return raw;
+    },
+    [],
+  );
+
   const [config, setConfig] = useState<NodeConfig>(() => ({
     id: node?.id || "",
     title: node?.title || "",
     type: node?.type || "ACTION",
-    config: node?.config || {},
+    config: node ? normalizeConfig(node.type, node.config || {}) : {},
   }));
 
   // Resetear config cuando cambia el nodo
@@ -37,7 +63,7 @@ useEffect(() => {
         id: node.id,
         title: node.title,
         type: node.type,
-        config: node.config || {},
+        config: normalizeConfig(node.type, node.config || {}),
       };
       console.log(
         "NodeConfigPanel: Cargando configuración del nodo:",
@@ -89,10 +115,14 @@ useEffect(() => {
   }, []);
 
   const handleSave = useCallback(() => {
-    console.log("Guardando configuración:", config);
-    onSave(config);
+    const normalized: NodeConfig = {
+      ...config,
+      config: normalizeConfig(config.type, config.config),
+    };
+    console.log("Guardando configuración:", normalized);
+    onSave(normalized);
     // onClose se llama automáticamente desde el padre en handleSaveConfig
-  }, [config, onSave]);
+  }, [config, normalizeConfig, onSave]);
 
   if (!isOpen || !node) return null;
 
@@ -138,75 +168,108 @@ useEffect(() => {
             </div>
           )}
 
-          {(node.type === "ACTION" || node.type === "HTTP") && (
+          {node.type === "ACTION" && (
             <div className="config-section">
-              <h4 className="config-section-title">
-                {node.type === "HTTP"
-                  ? "Configuración HTTP"
-                  : "Configuración de Acción"}
-              </h4>
+              <h4 className="config-section-title">Configuración de Acción</h4>
               <div className="form-group">
-                <label className="form-label">
-                  {node.type === "HTTP" ? "Tipo de HTTP" : "Tipo de Acción"}
-                </label>
+                <label className="form-label">Tipo de Acción</label>
                 <select
                   className="form-select"
-                  value={config.config.actionType || "send_email"}
+                  value={config.config.actionType || "Acción 1"}
                   onChange={(e) =>
                     updateNestedConfig("actionType", e.target.value)
                   }
                 >
-                  <option value="The Legend of Zelda: Breath of the Wild">The Legend of Zelda: Breath of the Wild</option>
+                  <option value="Acción 1">Acción 1</option>
+                  <option value="Acción 2">Acción 2</option>
+                  <option value="Acción 3">Acción 3</option>
+                  <option value="Acción 4">Acción 4</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Número</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={config.config.number ?? ""}
+                  onChange={(e) =>
+                    updateNestedConfig("number", e.target.value)
+                  }
+                  placeholder="Ej: 10"
+                  step="any"
+                />
+              </div>
+            </div>
+          )}
+
+          {node.type === "HTTP" && (
+            <div className="config-section">
+              <h4 className="config-section-title">Configuración HTTP</h4>
+              <div className="form-group">
+                <label className="form-label">Tipo de HTTP</label>
+                <select
+                  className="form-select"
+                  value={
+                    config.config.actionType ||
+                    "The Legend of Zelda: Breath of the Wild"
+                  }
+                  onChange={(e) =>
+                    updateNestedConfig("actionType", e.target.value)
+                  }
+                >
+                  <option value="The Legend of Zelda: Breath of the Wild">
+                    The Legend of Zelda: Breath of the Wild
+                  </option>
                   <option value="Elden Ring">Elden Ring</option>
                   <option value="Hollow Knight">Hollow Knight</option>
                   <option value="Street Fighter 6">Street Fighter 6</option>
-                  <option value="Final Fantasy VII Rebirth">Final Fantasy VII Rebirth</option>
+                  <option value="Final Fantasy VII Rebirth">
+                    Final Fantasy VII Rebirth
+                  </option>
                 </select>
               </div>
 
-              {node.type === "HTTP" && (
-                <div style={{ display: "none" }}>
-                  <div className="form-group">
-                    <label className="form-label">URL</label>
-                    <input
-                      type="url"
-                      className="form-input"
-                      value={config.config.url || ""}
-                      onChange={(e) =>
-                        updateNestedConfig("url", e.target.value)
-                      }
-                      placeholder="https://api.example.com/endpoint"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Método</label>
-                    <select
-                      className="form-select"
-                      value={config.config.method || "GET"}
-                      onChange={(e) =>
-                        updateNestedConfig("method", e.target.value)
-                      }
-                    >
-                      <option value="GET">GET</option>
-                      <option value="POST">POST</option>
-                      <option value="PUT">PUT</option>
-                      <option value="DELETE">DELETE</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Body (JSON)</label>
-                    <textarea
-                      className="form-textarea"
-                      value={config.config.body || ""}
-                      onChange={(e) =>
-                        updateNestedConfig("body", e.target.value)
-                      }
-                      placeholder='{"key": "value"}'
-                      rows={4}
-                    />
-                  </div>
+              <div style={{ display: "none" }}>
+                <div className="form-group">
+                  <label className="form-label">URL</label>
+                  <input
+                    type="url"
+                    className="form-input"
+                    value={config.config.url || ""}
+                    onChange={(e) =>
+                      updateNestedConfig("url", e.target.value)
+                    }
+                    placeholder="https://api.example.com/endpoint"
+                  />
                 </div>
-              )}
+                <div className="form-group">
+                  <label className="form-label">Método</label>
+                  <select
+                    className="form-select"
+                    value={config.config.method || "GET"}
+                    onChange={(e) =>
+                      updateNestedConfig("method", e.target.value)
+                    }
+                  >
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="DELETE">DELETE</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Body (JSON)</label>
+                  <textarea
+                    className="form-textarea"
+                    value={config.config.body || ""}
+                    onChange={(e) =>
+                      updateNestedConfig("body", e.target.value)
+                    }
+                    placeholder='{"key": "value"}'
+                    rows={4}
+                  />
+                </div>
+              </div>
             </div>
           )}
 

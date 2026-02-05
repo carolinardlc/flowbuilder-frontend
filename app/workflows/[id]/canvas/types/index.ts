@@ -18,11 +18,16 @@ export interface WorkflowNodeData {
   config?: {
     welcomeMessage?: string;
     actionType?:
+      | "Acción 1"
+      | "Acción 2"
+      | "Acción 3"
+      | "Acción 4"
       | "The Legend of Zelda: Breath of the Wild"
       | "Elden Ring"
       | "Hollow Knight"
       | "Street Fighter 6"
       | "Final Fantasy VII Rebirth";
+    number?: string;
     url?: string;
     method?: "GET" | "POST" | "PUT" | "DELETE";
     body?: string;
@@ -71,11 +76,16 @@ export interface NodeConfig {
   config: {
     welcomeMessage?: string;
     actionType?:
+      | "Acción 1"
+      | "Acción 2"
+      | "Acción 3"
+      | "Acción 4"
       | "The Legend of Zelda: Breath of the Wild"
       | "Elden Ring"
       | "Hollow Knight"
       | "Street Fighter 6"
       | "Final Fantasy VII Rebirth";
+    number?: string;
     url?: string;
     method?: "GET" | "POST" | "PUT" | "DELETE";
     body?: string;
