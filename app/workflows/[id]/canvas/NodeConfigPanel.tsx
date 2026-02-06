@@ -25,26 +25,47 @@ export default function NodeConfigPanel({
 }: NodeConfigPanelProps) {
   const normalizeConfig = useCallback(
     (nodeType: WorkflowNodeData["type"], raw: NodeConfig["config"]) => {
-      if (nodeType === "ACTION") {
+      if (nodeType === "HTTP_REQUEST") {
         return {
           ...raw,
-          actionType: raw.actionType ?? "Acción 1",
-          number: raw.number ?? "",
-        };
-      }
-
-      if (nodeType === "HTTP") {
-        return {
-          ...raw,
-          actionType:
-            raw.actionType ?? "The Legend of Zelda: Breath of the Wild",
-          url: raw.url ?? "",
           method: raw.method ?? "GET",
+          url: raw.url ?? "",
+          timeoutMs: raw.timeoutMs ?? "",
+          retries: raw.retries ?? "",
+          errorPolicy: raw.errorPolicy ?? "STOP_ON_FAIL",
+          headers: raw.headers ?? {},
           body: raw.body ?? "",
+          httpOutput: raw.httpOutput ?? "",
+          outputMapping: raw.outputMapping ?? {},
         };
       }
 
-      return raw;
+      if (nodeType === "CONDITIONAL") {
+        return {
+          ...raw,
+          conditionExpression: raw.conditionExpression ?? "",
+        };
+      }
+
+      if (nodeType === "COMMAND") {
+        return {
+          ...raw,
+          command: raw.command ?? "",
+          args: raw.args ?? "",
+          input: raw.input ?? "",
+          output: raw.output ?? "",
+        };
+      }
+
+      if (nodeType === "END") {
+        return {
+          ...raw,
+          outputType: raw.outputType ?? "success",
+          message: raw.message ?? "",
+        };
+      }
+
+      return { ...raw };
     },
     [],
   );
@@ -52,12 +73,21 @@ export default function NodeConfigPanel({
   const [config, setConfig] = useState<NodeConfig>(() => ({
     id: node?.id || "",
     title: node?.title || "",
-    type: node?.type || "ACTION",
+    type: node?.type || "COMMAND",
     config: node ? normalizeConfig(node.type, node.config || {}) : {},
   }));
 
+  const [outputMappingText, setOutputMappingText] = useState<string>(() => {
+    if (node?.type !== "HTTP_REQUEST") return "{}";
+    try {
+      return JSON.stringify(node.config?.outputMapping ?? {}, null, 2);
+    } catch {
+      return "{}";
+    }
+  });
+
   // Resetear config cuando cambia el nodo
-useEffect(() => {
+  useEffect(() => {
     if (node) {
       const newConfig: NodeConfig = {
         id: node.id,
@@ -65,10 +95,16 @@ useEffect(() => {
         type: node.type,
         config: normalizeConfig(node.type, node.config || {}),
       };
-      console.log(
-        "NodeConfigPanel: Cargando configuración del nodo:",
-        newConfig,
-      );
+
+      if (node.type === "HTTP_REQUEST") {
+        try {
+          setOutputMappingText(
+            JSON.stringify(newConfig.config.outputMapping ?? {}, null, 2),
+          );
+        } catch {
+          setOutputMappingText("{}");
+        }
+      }
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setConfig(newConfig);
     }
@@ -87,10 +123,7 @@ useEffect(() => {
   const updateNestedConfig = useCallback((path: string, value: string) => {
     setConfig((prev) => {
       const keys = path.split(".");
-      const nextConfig = { ...(prev.config ?? {}) } as Record<
-        string,
-        unknown
-      >;
+      const nextConfig = { ...(prev.config ?? {}) } as Record<string, unknown>;
 
       let current: Record<string, unknown> = nextConfig;
 
@@ -115,14 +148,28 @@ useEffect(() => {
   }, []);
 
   const handleSave = useCallback(() => {
+    let outputMapping = config.config.outputMapping;
+    if (config.type === "HTTP_REQUEST") {
+      try {
+        const parsed = JSON.parse(outputMappingText || "{}");
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          outputMapping = parsed as Record<string, string>;
+        }
+      } catch {
+        outputMapping = config.config.outputMapping ?? {};
+      }
+    }
+
     const normalized: NodeConfig = {
       ...config,
-      config: normalizeConfig(config.type, config.config),
+      config: normalizeConfig(config.type, {
+        ...config.config,
+        outputMapping,
+      }),
     };
-    console.log("Guardando configuración:", normalized);
     onSave(normalized);
     // onClose se llama automáticamente desde el padre en handleSaveConfig
-  }, [config, normalizeConfig, onSave]);
+  }, [config, normalizeConfig, onSave, outputMappingText]);
 
   if (!isOpen || !node) return null;
 
@@ -168,108 +215,154 @@ useEffect(() => {
             </div>
           )}
 
-          {node.type === "ACTION" && (
+          {node.type === "COMMAND" && (
             <div className="config-section">
-              <h4 className="config-section-title">Configuración de Acción</h4>
+              <h4 className="config-section-title">Configuración de Command</h4>
               <div className="form-group">
-                <label className="form-label">Tipo de Acción</label>
-                <select
-                  className="form-select"
-                  value={config.config.actionType || "Acción 1"}
+                <label className="form-label">Comando</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={config.config.command ?? ""}
                   onChange={(e) =>
-                    updateNestedConfig("actionType", e.target.value)
+                    updateNestedConfig("command", e.target.value)
                   }
-                >
-                  <option value="ADD">ADD</option>
-                  <option value="EXPONENTIAL">EXPONENTIAL</option>
-                  <option value="FACTORIAL">FACTORIAL</option>
-                  <option value="SQUARE">SQUARE</option>
-                </select>
+                  placeholder="Ej: python"
+                />
               </div>
               <div className="form-group">
-                <label className="form-label">Número</label>
+                <label className="form-label">Argumentos</label>
                 <input
-                  type="number"
+                  type="text"
                   className="form-input"
-                  value={config.config.number ?? ""}
-                  onChange={(e) =>
-                    updateNestedConfig("number", e.target.value)
-                  }
-                  placeholder="Ej: 10"
-                  step="any"
+                  value={config.config.args ?? ""}
+                  onChange={(e) => updateNestedConfig("args", e.target.value)}
+                  placeholder="Ej: process.py"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Input (opcional)</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={config.config.input ?? ""}
+                  onChange={(e) => updateNestedConfig("input", e.target.value)}
+                  placeholder="Ej: context.rawData"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Output (opcional)</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={config.config.output ?? ""}
+                  onChange={(e) => updateNestedConfig("output", e.target.value)}
+                  placeholder="Ej: context.cleanedData"
                 />
               </div>
             </div>
           )}
 
-          {node.type === "HTTP" && (
+          {node.type === "HTTP_REQUEST" && (
             <div className="config-section">
-              <h4 className="config-section-title">Configuración HTTP</h4>
+              <h4 className="config-section-title">
+                Configuración de HTTP Request
+              </h4>
+
               <div className="form-group">
-                <label className="form-label">Tipo de HTTP</label>
+                <label className="form-label">Método</label>
                 <select
                   className="form-select"
-                  value={
-                    config.config.actionType ||
-                    "The Legend of Zelda: Breath of the Wild"
-                  }
-                  onChange={(e) =>
-                    updateNestedConfig("actionType", e.target.value)
-                  }
+                  value={config.config.method ?? "GET"}
+                  onChange={(e) => updateNestedConfig("method", e.target.value)}
                 >
-                  <option value="The Legend of Zelda: Breath of the Wild">
-                    The Legend of Zelda: Breath of the Wild
-                  </option>
-                  <option value="Elden Ring">Elden Ring</option>
-                  <option value="Hollow Knight">Hollow Knight</option>
-                  <option value="Street Fighter 6">Street Fighter 6</option>
-                  <option value="Final Fantasy VII Rebirth">
-                    Final Fantasy VII Rebirth
-                  </option>
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
                 </select>
               </div>
 
-              <div style={{ display: "none" }}>
-                <div className="form-group">
-                  <label className="form-label">URL</label>
-                  <input
-                    type="url"
-                    className="form-input"
-                    value={config.config.url || ""}
-                    onChange={(e) =>
-                      updateNestedConfig("url", e.target.value)
-                    }
-                    placeholder="https://api.example.com/endpoint"
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Método</label>
-                  <select
-                    className="form-select"
-                    value={config.config.method || "GET"}
-                    onChange={(e) =>
-                      updateNestedConfig("method", e.target.value)
-                    }
-                  >
-                    <option value="GET">GET</option>
-                    <option value="POST">POST</option>
-                    <option value="PUT">PUT</option>
-                    <option value="DELETE">DELETE</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Body (JSON)</label>
-                  <textarea
-                    className="form-textarea"
-                    value={config.config.body || ""}
-                    onChange={(e) =>
-                      updateNestedConfig("body", e.target.value)
-                    }
-                    placeholder='{"key": "value"}'
-                    rows={4}
-                  />
-                </div>
+              <div className="form-group">
+                <label className="form-label">URL</label>
+                <input
+                  type="url"
+                  className="form-input"
+                  value={config.config.url ?? ""}
+                  onChange={(e) => updateNestedConfig("url", e.target.value)}
+                  placeholder="https://api.example.com/data"
+                />
               </div>
+
+              {config.config.method === "POST" ? (
+                <div className="form-group">
+                  <label className="form-label">Output</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={config.config.httpOutput ?? ""}
+                    onChange={(e) =>
+                      updateNestedConfig("httpOutput", e.target.value)
+                    }
+                    placeholder="Ej: context.token"
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className="form-group">
+                    <label className="form-label">Timeout (ms)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={config.config.timeoutMs ?? ""}
+                      onChange={(e) =>
+                        updateNestedConfig("timeoutMs", e.target.value)
+                      }
+                      placeholder="5000"
+                      min={0}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Reintentos</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={config.config.retries ?? ""}
+                      onChange={(e) =>
+                        updateNestedConfig("retries", e.target.value)
+                      }
+                      placeholder="3"
+                      min={0}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Política de error</label>
+                    <select
+                      className="form-select"
+                      value={config.config.errorPolicy ?? "STOP_ON_FAIL"}
+                      onChange={(e) =>
+                        updateNestedConfig("errorPolicy", e.target.value)
+                      }
+                    >
+                      <option value="STOP_ON_FAIL">STOP_ON_FAIL</option>
+                      <option value="CONTINUE">CONTINUE</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Mapeo de salida (JSON)</label>
+                    <textarea
+                      className="form-textarea"
+                      value={outputMappingText}
+                      onChange={(e) => setOutputMappingText(e.target.value)}
+                      placeholder='{"status":"$.status","payload":"$.data"}'
+                      rows={6}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -279,46 +372,15 @@ useEffect(() => {
                 Configuración de Condición
               </h4>
               <div className="form-group">
-                <label className="form-label">Número 1</label>
+                <label className="form-label">Condición</label>
                 <input
-                  type="number"
+                  type="text"
                   className="form-input"
-                  value={config.config.condition?.number1 ?? ""}
+                  value={config.config.conditionExpression ?? ""}
                   onChange={(e) =>
-                    updateNestedConfig("condition.number1", e.target.value)
+                    updateNestedConfig("conditionExpression", e.target.value)
                   }
-                  placeholder="Ej: 10"
-                  step="any"
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Operador</label>
-                <select
-                  className="form-select"
-                  value={config.config.condition?.operator ?? "=="}
-                  onChange={(e) =>
-                    updateNestedConfig("condition.operator", e.target.value)
-                  }
-                >
-                  <option value="==">==</option>
-                  <option value="!=">!=</option>
-                  <option value=">=">&gt;=</option>
-                  <option value=">">&gt;</option>
-                  <option value="<=">&lt;=</option>
-                  <option value="<">&lt;</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Número 2</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  value={config.config.condition?.number2 ?? ""}
-                  onChange={(e) =>
-                    updateNestedConfig("condition.number2", e.target.value)
-                  }
-                  placeholder="Ej: 20"
-                  step="any"
+                  placeholder="Ej: context.status == 200"
                 />
               </div>
             </div>

@@ -4,10 +4,16 @@
 
 export type WorkflowNodeType =
   | "START"
-  | "ACTION"
+  | "COMMAND"
   | "CONDITIONAL"
   | "END"
-  | "HTTP";
+  | "HTTP_REQUEST";
+
+export type HttpErrorPolicy = "STOP_ON_FAIL" | "CONTINUE";
+
+export type HttpOutputMapping = Record<string, string>;
+
+export type HttpHeaders = Record<string, string>;
 
 export interface WorkflowNodeData {
   id: string;
@@ -16,27 +22,20 @@ export interface WorkflowNodeData {
   x: number;
   y: number;
   config?: {
-    welcomeMessage?: string;
-    actionType?:
-      | "Acción 1"
-      | "Acción 2"
-      | "Acción 3"
-      | "Acción 4"
-      | "The Legend of Zelda: Breath of the Wild"
-      | "Elden Ring"
-      | "Hollow Knight"
-      | "Street Fighter 6"
-      | "Final Fantasy VII Rebirth";
-    number?: string;
+    method?: "GET" | "POST";
     url?: string;
-    method?: "GET" | "POST" | "PUT" | "DELETE";
+    timeoutMs?: string;
+    retries?: string;
+    errorPolicy?: HttpErrorPolicy;
+    headers?: HttpHeaders;
     body?: string;
-    conditionType?: "if_else" | "switch" | "filter";
-    condition?: {
-      number1?: string;
-      operator?: "==" | "!=" | ">=" | ">" | "<=" | "<";
-      number2?: string;
-    };
+    httpOutput?: string;
+    outputMapping?: HttpOutputMapping;
+    conditionExpression?: string;
+    command?: string;
+    args?: string;
+    input?: string;
+    output?: string;
     outputType?: "success" | "error" | "notification";
     message?: string;
   };
@@ -74,27 +73,20 @@ export interface NodeConfig {
   title: string;
   type: WorkflowNodeType;
   config: {
-    welcomeMessage?: string;
-    actionType?:
-      | "Acción 1"
-      | "Acción 2"
-      | "Acción 3"
-      | "Acción 4"
-      | "The Legend of Zelda: Breath of the Wild"
-      | "Elden Ring"
-      | "Hollow Knight"
-      | "Street Fighter 6"
-      | "Final Fantasy VII Rebirth";
-    number?: string;
+    method?: "GET" | "POST";
     url?: string;
-    method?: "GET" | "POST" | "PUT" | "DELETE";
+    timeoutMs?: string;
+    retries?: string;
+    errorPolicy?: HttpErrorPolicy;
+    headers?: HttpHeaders;
     body?: string;
-    conditionType?: "if_else" | "switch" | "filter";
-    condition?: {
-      number1?: string;
-      operator?: "==" | "!=" | ">=" | ">" | "<=" | "<";
-      number2?: string;
-    };
+    httpOutput?: string;
+    outputMapping?: HttpOutputMapping;
+    conditionExpression?: string;
+    command?: string;
+    args?: string;
+    input?: string;
+    output?: string;
     outputType?: "success" | "error" | "notification";
     message?: string;
   };

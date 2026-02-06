@@ -824,7 +824,9 @@ body {
   opacity: 0.85;
   transform: scale(0.92);
   box-shadow: 0 16px 28px rgba(74, 74, 74, 0.2);
-  transition: transform 120ms ease, opacity 120ms ease;
+  transition:
+    transform 120ms ease,
+    opacity 120ms ease;
   z-index: 6;
 }
 
@@ -925,6 +927,11 @@ body {
   color: #dc2626;
 }
 
+.node-type-badge.node-command {
+  background: rgba(245, 182, 165, 0.25);
+  color: #dc2626;
+}
+
 .node-type-badge.node-conditional {
   background: rgba(158, 139, 255, 0.2);
   color: #6366f1;
@@ -933,6 +940,11 @@ body {
 .node-type-badge.node-end {
   background: rgba(212, 212, 212, 0.6);
   color: #6b7280;
+}
+
+.node-type-badge.node-http_request {
+  background: rgba(245, 182, 165, 0.2);
+  color: #dc2626;
 }
 
 .config-panel-close {
@@ -1095,6 +1107,10 @@ body {
   background: rgba(245, 182, 165, 0.25);
 }
 
+.node-command {
+  background: rgba(245, 182, 165, 0.25);
+}
+
 .node-conditional {
   background: rgba(158, 139, 255, 0.2);
 }
@@ -1104,6 +1120,10 @@ body {
 }
 
 .node-http {
+  background: rgba(245, 182, 165, 0.2);
+}
+
+.node-http_request {
   background: rgba(245, 182, 165, 0.2);
 }
 

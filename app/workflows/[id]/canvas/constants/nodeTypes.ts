@@ -13,13 +13,13 @@ export const NODE_TYPES = {
     label: "Inicio",
     description: "Punto de inicio del workflow",
   },
-  ACTION: {
-    type: "ACTION" as WorkflowNodeType,
+  COMMAND: {
+    type: "COMMAND" as WorkflowNodeType,
     color: "#f5b6a5",
     bgColor: "rgba(245, 182, 165, 0.25)",
     icon: "⚡",
-    label: "Acción",
-    description: "Ejecuta una acción específica",
+    label: "Command",
+    description: "Ejecuta un comando local",
   },
   CONDITIONAL: {
     type: "CONDITIONAL" as WorkflowNodeType,
@@ -29,13 +29,21 @@ export const NODE_TYPES = {
     label: "Condicional",
     description: "Evalúa condiciones y bifurca el flujo",
   },
-  HTTP: {
-    type: "HTTP" as WorkflowNodeType,
+  HTTP_REQUEST: {
+    type: "HTTP_REQUEST" as WorkflowNodeType,
     color: "#f5b6a5",
     bgColor: "rgba(245, 182, 165, 0.2)",
     icon: "🌐",
-    label: "HTTP",
+    label: "HTTP Request",
     description: "Solicitud HTTP externa",
+  },
+  END: {
+    type: "END" as WorkflowNodeType,
+    color: "#d4d4d4",
+    bgColor: "rgba(212, 212, 212, 0.6)",
+    icon: "🏁",
+    label: "Fin",
+    description: "Marca el final del workflow",
   },
 } as const;
 

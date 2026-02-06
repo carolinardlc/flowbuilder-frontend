@@ -23,14 +23,17 @@ export type BackendWorkflow = {
 };
 
 const mapNodeType = (type: WorkflowNodeType): BackendNode["type"] => {
-  if (type === "ACTION") return "COMMAND";
-  if (type === "HTTP") return "HTTP";
+  if (type === "COMMAND") return "COMMAND";
+  if (type === "HTTP_REQUEST") return "HTTP";
   if (type === "START") return "START";
   if (type === "CONDITIONAL") return "CONDITIONAL";
   return "END";
 };
 
-const resolveCondition = (connection: Connection, fromNode?: WorkflowNodeData) => {
+const resolveCondition = (
+  connection: Connection,
+  fromNode?: WorkflowNodeData,
+) => {
   if (fromNode?.type !== "CONDITIONAL") return true;
   const offset = connection.fromOffsetY ?? 40;
   return offset <= 40;
@@ -49,18 +52,19 @@ export const serializeWorkflow = (
       type: mapNodeType(node.type),
     };
 
-    if (node.type === "ACTION") {
+    if (node.type === "COMMAND") {
       return {
         ...base,
-        commandType: node.config?.actionType,
-        value: node.config?.number,
+        commandType: node.config?.command,
+        value: node.config?.args,
+        inputKey: node.config?.output,
       };
     }
 
-    if (node.type === "HTTP") {
+    if (node.type === "HTTP_REQUEST") {
       return {
         ...base,
-        inputKey: node.config?.actionType,
+        inputKey: node.config?.url,
       };
     }
 

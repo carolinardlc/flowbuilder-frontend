@@ -323,19 +323,18 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
 
     // Configuración completa
     nodes.forEach((node) => {
-      if (node.type === "ACTION") {
-        if (!node.config?.actionType || !node.config?.number) {
-          errors.push(`Config incompleta en Acción: ${node.title}.`);
+      if (node.type === "COMMAND") {
+        if (!node.config?.command) {
+          errors.push(`Config incompleta en Command: ${node.title}.`);
         }
       }
-      if (node.type === "HTTP") {
-        if (!node.config?.actionType) {
-          errors.push(`Config incompleta en HTTP: ${node.title}.`);
+      if (node.type === "HTTP_REQUEST") {
+        if (!node.config?.method || !node.config?.url) {
+          errors.push(`Config incompleta en HTTP Request: ${node.title}.`);
         }
       }
       if (node.type === "CONDITIONAL") {
-        const condition = node.config?.condition;
-        if (!condition?.number1 || !condition?.operator || !condition?.number2) {
+        if (!node.config?.conditionExpression) {
           errors.push(`Config incompleta en Condicional: ${node.title}.`);
         }
       }
@@ -388,8 +387,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     if (!from || !to) return null;
 
     const startX = from.x + CANVAS_CONFIG.CONNECTION_OFFSET_X;
-    const startY =
-      from.y + (fromOffsetY ?? CANVAS_CONFIG.CONNECTION_OFFSET_Y);
+    const startY = from.y + (fromOffsetY ?? CANVAS_CONFIG.CONNECTION_OFFSET_Y);
     const endX = to.x;
     const endY = to.y + CANVAS_CONFIG.CONNECTION_OFFSET_Y;
     const controlX = (startX + endX) / 2;
@@ -430,10 +428,12 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
             {NODE_TYPE_ARRAY.map((nodeType) => (
               <div
                 key={nodeType.type}
-                className={`draggable-node node node-${nodeType.type.toLowerCase()} ${dragState.isDragging && dragState.newNodeType === nodeType.type
+                className={`draggable-node node node-${nodeType.type.toLowerCase()} ${
+                  dragState.isDragging &&
+                  dragState.newNodeType === nodeType.type
                     ? "draggable-node-active"
                     : ""
-                  }`}
+                }`}
                 onMouseDown={(e) => handleNodeTypeDragStart(nodeType.type, e)}
                 style={{ cursor: "grab", marginBottom: "8px" }}
               >
@@ -645,7 +645,6 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                 })}
               </svg>
             )}
-
           </div>
         </div>
       </section>
@@ -786,7 +785,9 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                 <p className="workflows-subtitle">
                   Se encontraron los siguientes errores:
                 </p>
-                <ul style={{ margin: 0, paddingLeft: "18px", color: "#c45757" }}>
+                <ul
+                  style={{ margin: 0, paddingLeft: "18px", color: "#c45757" }}
+                >
                   {validationResult.messages.map((message) => (
                     <li key={message}>{message}</li>
                   ))}
