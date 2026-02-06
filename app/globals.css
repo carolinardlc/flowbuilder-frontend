@@ -474,6 +474,16 @@ body {
   width: 100%;
 }
 
+.panel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.panel-send-button {
+  margin-top: 0.35rem;
+}
+
 .panel-list {
   margin: 1rem 0 0;
   padding: 0;

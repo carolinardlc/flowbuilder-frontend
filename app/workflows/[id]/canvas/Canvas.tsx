@@ -149,6 +149,11 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     messages: string[];
   }>({ status: "idle", messages: [] });
   const [isValidationOpen, setIsValidationOpen] = useState(false);
+  const [sendResult, setSendResult] = useState<{
+    status: "idle" | "ok" | "error";
+    message: string;
+  }>({ status: "idle", message: "" });
+  const [isSendOpen, setIsSendOpen] = useState(false);
 
   // Manejo de eliminación de nodo
   const handleDeleteNodeComplete = (nodeId: string) => {
@@ -196,6 +201,41 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+  };
+
+  const handleSendToBackend = async () => {
+    try {
+      const payload = serializeWorkflow(
+        workflowId,
+        workflowName ?? `Workflow ${workflowId}`,
+        nodes,
+        connections,
+      );
+
+      const response = await fetch(
+        "http://192.168.5.2:8080/api/workflows/run",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Backend error: ${response.status}`);
+      }
+
+      setSendResult({
+        status: "ok",
+        message: "Workflow enviado correctamente.",
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Error desconocido.";
+      setSendResult({ status: "error", message });
+    } finally {
+      setIsSendOpen(true);
+    }
   };
 
   const validateWorkflow = () => {
@@ -360,9 +400,17 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
 
         <aside className="canvas-panel canvas-panel-compact">
           <h3 className="panel-title">Exportar JSON</h3>
-          <button className="btn-primary" onClick={handleDownloadJson}>
-            Descargar
-          </button>
+          <div className="panel-actions">
+            <button className="btn-primary" onClick={handleDownloadJson}>
+              Descargar
+            </button>
+            <button
+              className="btn-secondary panel-send-button"
+              onClick={handleSendToBackend}
+            >
+              Enviar al backend
+            </button>
+          </div>
         </aside>
       </div>
 
@@ -665,6 +713,30 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
               <button
                 className="btn-secondary"
                 onClick={() => setIsValidationOpen(false)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isSendOpen && sendResult.status !== "idle" && (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal-card">
+            <h2 className="workflows-title">Envío al backend</h2>
+            <p
+              className="workflows-subtitle"
+              style={{
+                color: sendResult.status === "ok" ? "#2f7d67" : "#c45757",
+              }}
+            >
+              {sendResult.message}
+            </p>
+            <div className="form-actions">
+              <button
+                className="btn-secondary"
+                onClick={() => setIsSendOpen(false)}
               >
                 Cerrar
               </button>
