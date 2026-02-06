@@ -12,6 +12,7 @@ import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useDragAndDrop } from "./hooks/useDragAndDrop";
 import { useConnections } from "./hooks/useConnections";
 import { createNode } from "./utils/nodeUtils";
+import { serializeWorkflow } from "./utils/serializeWorkflow";
 import type { CanvasProps } from "./types";
 import { useWorkflows } from "../../../context/WorkflowsContext";
 
@@ -168,6 +169,30 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     };
   }, []);
 
+  const handleDownloadJson = () => {
+    const payload = serializeWorkflow(
+      workflowId,
+      workflowName ?? `Workflow ${workflowId}`,
+      nodes,
+      connections,
+    );
+    const json = JSON.stringify(payload, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const safeName = (workflowName ?? `workflow-${workflowId}`)
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-_]/g, "");
+    link.href = url;
+    link.download = `${safeName || "workflow"}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
   useEffect(() => {
     if (!dragState.isDragging || !dragState.newNodeType) {
       return;
@@ -193,27 +218,36 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
 
   return (
     <div className="canvas-layout">
-      {/* Panel izquierdo - Paleta de nodos */}
-      <aside className="canvas-panel">
-        <h3 className="panel-title">Arrastrar nodos</h3>
-        <div className="node-palette">
-          {NODE_TYPE_ARRAY.map((nodeType) => (
-            <div
-              key={nodeType.type}
-              className={`draggable-node node node-${nodeType.type.toLowerCase()} ${dragState.isDragging && dragState.newNodeType === nodeType.type
-                  ? "draggable-node-active"
-                  : ""
-                }`}
-              onMouseDown={(e) => handleNodeTypeDragStart(nodeType.type, e)}
-              style={{ cursor: "grab", marginBottom: "8px" }}
-            >
-              <span className="node-title" style={{ fontSize: "0.9rem" }}>
-                {nodeType.label}
-              </span>
-            </div>
-          ))}
-        </div>
-      </aside>
+      {/* Panel izquierdo - Export + Paleta de nodos */}
+      <div className="canvas-side canvas-side-offset">
+        <aside className="canvas-panel">
+          <h3 className="panel-title">Arrastrar nodos</h3>
+          <div className="node-palette">
+            {NODE_TYPE_ARRAY.map((nodeType) => (
+              <div
+                key={nodeType.type}
+                className={`draggable-node node node-${nodeType.type.toLowerCase()} ${dragState.isDragging && dragState.newNodeType === nodeType.type
+                    ? "draggable-node-active"
+                    : ""
+                  }`}
+                onMouseDown={(e) => handleNodeTypeDragStart(nodeType.type, e)}
+                style={{ cursor: "grab", marginBottom: "8px" }}
+              >
+                <span className="node-title" style={{ fontSize: "0.9rem" }}>
+                  {nodeType.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </aside>
+
+        <aside className="canvas-panel canvas-panel-compact">
+          <h3 className="panel-title">Exportar JSON</h3>
+          <button className="btn-primary" onClick={handleDownloadJson}>
+            Descargar
+          </button>
+        </aside>
+      </div>
 
       {/* Canvas principal */}
       <section className="canvas-stage">
@@ -379,7 +413,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
       </section>
 
       {/* Panel derecho - Detalles del nodo */}
-      <aside className="canvas-panel canvas-panel-right">
+      <aside className="canvas-panel canvas-panel-right canvas-panel-offset">
         <h3 className="panel-title">Detalle del nodo</h3>
         {selectedNode ? (
           <div className="panel-card">

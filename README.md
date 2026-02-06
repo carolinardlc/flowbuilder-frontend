@@ -1,29 +1,47 @@
-# flowbuilder-frontend
-A web-based app for creating, managing, and visualizing workflows through a canvas interface. Built with React (Frontend) and Spring Boot (Backend), it supports workflow creation, real-time validation, drag-and-drop design, and JSON import/export with a modular, scalable architecture.
+# FlowBuilder Frontend – MiniFlow
 
+Frontend del sistema **MiniFlow**, una aplicación web para crear, gestionar y visualizar **workflows** mediante un **diseñador visual tipo canvas**, inspirada en herramientas como n8n, con un enfoque académico y modular.
 
-# Proyecto Frontend – Workflow Builder
+Este repositorio corresponde únicamente al **Frontend**, desarrollado con **Next.js**, y se comunica (o se comunicará) con un backend independiente.
+
+---
+
+## Descripción general
+
+El sistema permite:
+
+- Crear y administrar workflows (nombre, descripción y estado).
+- Visualizar workflows en una vista de canvas con nodos interconectados.
+- Configurar nodos por tipo (HTTP, Command, Condicional, etc.).
+- Validar flujos antes de su ejecución.
+- Importar y exportar workflows en formato JSON.
+- Mantener un diseño visual claro y consistente.
+
+---
+
+## Tecnologías utilizadas
+
+- Next.js (App Router)
+- React
+- TypeScript
+- Tailwind CSS
+- Context API para manejo de estado global
+- Canvas para diagramación de nodos
+- LocalStorage para persistencia temporal
+
+---
 
 ## Requisitos previos
 
-1- Instalación de Node.js y npm (versión más reciente)
+Antes de iniciar, asegúrate de tener instalado:
 
+### Node.js
+Descargar desde:
 https://nodejs.org/es/download
 
-- seleccionar el "Windows Installer (.msi)" si eres de Windows
-- se puede cambiar a "macOS Installer (.pkg)"
+Instalar la versión LTS recomendada.
 
-Seguido paso, continuar con su instalación
-
-2- 📥 Obtener el proyecto
-
-	1. Abrir *GitHub Desktop*
-	2. Iniciar sesión con tu cuenta de GitHub
-	3. Clonar el repositorio del proyecto desde la opción *Clone a repository*
-	4. Seleccionar la carpeta donde se guardará el proyecto
-
-3- Correr el proyecto
-
-"npm install"
-"npm create vite@latest my-react-app -- --template react"
-"npm run dev"
+Verificar instalación:
+```bash
+node -v
+npm -v
