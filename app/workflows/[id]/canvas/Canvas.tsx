@@ -23,6 +23,11 @@ import { useWorkflows } from "../../../context/WorkflowsContext";
  * pueden crear, conectar y configurar nodos de workflow.
  */
 export default function Canvas({ workflowId, actions }: CanvasProps) {
+  const isNodeTypeKey = (
+    type: (typeof NODE_TYPE_ARRAY)[number]["type"] | null,
+  ): type is keyof typeof NODE_TYPES => {
+    return !!type && type in NODE_TYPES;
+  };
   const { workflows } = useWorkflows();
   const workflowName =
     workflows.find((workflow) => workflow.id === workflowId)?.name ?? null;
@@ -546,12 +551,8 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                 isDragging={dragState.draggedNode === node.id}
                 isJustCreated={node.id === justCreatedNodeId}
                 onSelect={(nodeId) => {
-                  const node = nodes.find((item) => item.id === nodeId);
                   setSelectedNodeId(nodeId);
                   setSelectedConnectionId(null);
-                  if (node?.type === "CONDITIONAL") {
-                    setIsConfigPanelOpen(true);
-                  }
                 }}
                 onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
                 onConnectionClick={
@@ -671,7 +672,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
       />
 
       {dragState.isDragging &&
-        dragState.newNodeType &&
+        isNodeTypeKey(dragState.newNodeType) &&
         dragState.cursorPosition && (
           <div
             className={`node node-drag-preview node-${dragState.newNodeType.toLowerCase()}`}

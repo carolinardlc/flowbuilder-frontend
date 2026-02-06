@@ -180,10 +180,10 @@ useEffect(() => {
                     updateNestedConfig("actionType", e.target.value)
                   }
                 >
-                  <option value="Acción 1">Acción 1</option>
-                  <option value="Acción 2">Acción 2</option>
-                  <option value="Acción 3">Acción 3</option>
-                  <option value="Acción 4">Acción 4</option>
+                  <option value="ADD">ADD</option>
+                  <option value="EXPONENTIAL">EXPONENTIAL</option>
+                  <option value="FACTORIAL">FACTORIAL</option>
+                  <option value="SQUARE">SQUARE</option>
                 </select>
               </div>
               <div className="form-group">

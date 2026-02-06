@@ -29,14 +29,6 @@ export const NODE_TYPES = {
     label: "Condicional",
     description: "Evalúa condiciones y bifurca el flujo",
   },
-  END: {
-    type: "END" as WorkflowNodeType,
-    color: "#d4d4d4",
-    bgColor: "rgba(212, 212, 212, 0.6)",
-    icon: "🏁",
-    label: "Fin",
-    description: "Punto final del workflow",
-  },
   HTTP: {
     type: "HTTP" as WorkflowNodeType,
     color: "#f5b6a5",
