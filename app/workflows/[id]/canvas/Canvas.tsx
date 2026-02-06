@@ -144,6 +144,11 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
   const [selectedConnectionId, setSelectedConnectionId] = useState<
     string | null
   >(null);
+  const [validationResult, setValidationResult] = useState<{
+    status: "idle" | "ok" | "error";
+    messages: string[];
+  }>({ status: "idle", messages: [] });
+  const [isValidationOpen, setIsValidationOpen] = useState(false);
 
   // Manejo de eliminación de nodo
   const handleDeleteNodeComplete = (nodeId: string) => {
@@ -191,6 +196,118 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+  };
+
+  const validateWorkflow = () => {
+    const errors: string[] = [];
+    const startNodes = nodes.filter((node) => node.type === "START");
+
+    if (startNodes.length === 0) {
+      errors.push("Falta el nodo Inicio.");
+    } else if (startNodes.length > 1) {
+      errors.push("Hay más de un nodo Inicio.");
+    }
+
+    const adjacency = new Map<string, string[]>();
+    nodes.forEach((node) => adjacency.set(node.id, []));
+    connections.forEach((connection) => {
+      const list = adjacency.get(connection.from) ?? [];
+      list.push(connection.to);
+      adjacency.set(connection.from, list);
+    });
+
+    // Ciclos
+    const visited = new Set<string>();
+    const inStack = new Set<string>();
+    const cyclePaths: string[] = [];
+
+    const dfsCycle = (nodeId: string, path: string[]) => {
+      visited.add(nodeId);
+      inStack.add(nodeId);
+      const neighbors = adjacency.get(nodeId) ?? [];
+      for (const next of neighbors) {
+        if (!visited.has(next)) {
+          dfsCycle(next, [...path, next]);
+        } else if (inStack.has(next)) {
+          const cycleStartIndex = path.indexOf(next);
+          const cycle =
+            cycleStartIndex >= 0 ? path.slice(cycleStartIndex) : [nodeId, next];
+          cyclePaths.push(cycle.join(" → "));
+        }
+      }
+      inStack.delete(nodeId);
+    };
+
+    nodes.forEach((node) => {
+      if (!visited.has(node.id)) {
+        dfsCycle(node.id, [node.id]);
+      }
+    });
+
+    if (cyclePaths.length > 0) {
+      errors.push(
+        `Se detectaron bucles: ${Array.from(new Set(cyclePaths)).join(", ")}.`,
+      );
+    }
+
+    // Alcanzabilidad desde Inicio
+    if (startNodes.length >= 1) {
+      const reachable = new Set<string>();
+      const stack = [startNodes[0].id];
+      while (stack.length > 0) {
+        const current = stack.pop();
+        if (!current || reachable.has(current)) continue;
+        reachable.add(current);
+        const neighbors = adjacency.get(current) ?? [];
+        neighbors.forEach((next) => {
+          if (!reachable.has(next)) stack.push(next);
+        });
+      }
+
+      const unreachable = nodes.filter((node) => !reachable.has(node.id));
+      if (unreachable.length > 0) {
+        errors.push(
+          `Hay nodos no alcanzables desde Inicio: ${unreachable
+            .map((node) => node.title)
+            .join(", ")}.`,
+        );
+      }
+    }
+
+    // Configuración completa
+    nodes.forEach((node) => {
+      if (node.type === "ACTION") {
+        if (!node.config?.actionType || !node.config?.number) {
+          errors.push(`Config incompleta en Acción: ${node.title}.`);
+        }
+      }
+      if (node.type === "HTTP") {
+        if (!node.config?.actionType) {
+          errors.push(`Config incompleta en HTTP: ${node.title}.`);
+        }
+      }
+      if (node.type === "CONDITIONAL") {
+        const condition = node.config?.condition;
+        if (!condition?.number1 || !condition?.operator || !condition?.number2) {
+          errors.push(`Config incompleta en Condicional: ${node.title}.`);
+        }
+      }
+      if (node.type === "END") {
+        if (!node.config?.outputType || !node.config?.message) {
+          errors.push(`Config incompleta en Fin: ${node.title}.`);
+        }
+      }
+    });
+
+    if (errors.length === 0) {
+      setValidationResult({
+        status: "ok",
+        messages: ["Workflow válido. No se encontraron errores."],
+      });
+    } else {
+      setValidationResult({ status: "error", messages: errors });
+    }
+    setIsValidationOpen(true);
   };
 
   useEffect(() => {
@@ -484,6 +601,17 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
         ) : (
           <p className="panel-empty">Selecciona un nodo para ver detalles.</p>
         )}
+
+        <div className="panel-card" style={{ marginTop: "12px" }}>
+          <p className="panel-label">Validar workflow</p>
+          <button
+            className="btn-primary"
+            style={{ width: "100%" }}
+            onClick={validateWorkflow}
+          >
+            Validar Workflow
+          </button>
+        </div>
       </aside>
 
       {/* Panel de configuración */}
@@ -512,6 +640,38 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
             <span className="node-type">{dragState.newNodeType}</span>
           </div>
         )}
+
+      {isValidationOpen && validationResult.status !== "idle" && (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal-card">
+            <h2 className="workflows-title">Validación de workflow</h2>
+            {validationResult.status === "ok" ? (
+              <p className="workflows-subtitle" style={{ color: "#2f7d67" }}>
+                {validationResult.messages[0]}
+              </p>
+            ) : (
+              <>
+                <p className="workflows-subtitle">
+                  Se encontraron los siguientes errores:
+                </p>
+                <ul style={{ margin: 0, paddingLeft: "18px", color: "#c45757" }}>
+                  {validationResult.messages.map((message) => (
+                    <li key={message}>{message}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <div className="form-actions">
+              <button
+                className="btn-secondary"
+                onClick={() => setIsValidationOpen(false)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
