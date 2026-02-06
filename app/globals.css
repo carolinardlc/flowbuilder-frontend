@@ -663,6 +663,15 @@ body {
   filter: drop-shadow(0 2px 8px rgba(98, 201, 169, 0.4));
 }
 
+.execution-layer {
+  pointer-events: none;
+}
+
+.execution-dot {
+  fill: #62c9a9;
+  filter: drop-shadow(0 2px 6px rgba(98, 201, 169, 0.4));
+}
+
 .node {
   position: relative;
   width: 180px;

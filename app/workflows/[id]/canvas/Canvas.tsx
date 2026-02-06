@@ -154,6 +154,8 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     messages: string[];
   }>({ status: "idle", messages: [] });
   const [isValidationOpen, setIsValidationOpen] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [executionKey, setExecutionKey] = useState(0);
   const [sendResult, setSendResult] = useState<{
     status: "idle" | "ok" | "error";
     message: string;
@@ -243,7 +245,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     }
   };
 
-  const validateWorkflow = () => {
+  const getValidationErrors = () => {
     const errors: string[] = [];
     const startNodes = nodes.filter((node) => node.type === "START");
 
@@ -344,6 +346,11 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
       }
     });
 
+    return errors;
+  };
+
+  const validateWorkflow = () => {
+    const errors = getValidationErrors();
     if (errors.length === 0) {
       setValidationResult({
         status: "ok",
@@ -353,6 +360,41 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
       setValidationResult({ status: "error", messages: errors });
     }
     setIsValidationOpen(true);
+  };
+
+  const handleExecuteWorkflow = () => {
+    const errors = getValidationErrors();
+    if (errors.length > 0) {
+      setValidationResult({ status: "error", messages: errors });
+      setIsValidationOpen(true);
+      return;
+    }
+
+    setIsExecuting(false);
+    setExecutionKey((prev) => prev + 1);
+    requestAnimationFrame(() => {
+      setIsExecuting(true);
+      window.setTimeout(() => setIsExecuting(false), 2200);
+    });
+  };
+
+  const buildConnectionPath = (
+    fromNodeId: string,
+    toNodeId: string,
+    fromOffsetY?: number,
+  ) => {
+    const from = nodes.find((node) => node.id === fromNodeId);
+    const to = nodes.find((node) => node.id === toNodeId);
+    if (!from || !to) return null;
+
+    const startX = from.x + CANVAS_CONFIG.CONNECTION_OFFSET_X;
+    const startY =
+      from.y + (fromOffsetY ?? CANVAS_CONFIG.CONNECTION_OFFSET_Y);
+    const endX = to.x;
+    const endY = to.y + CANVAS_CONFIG.CONNECTION_OFFSET_Y;
+    const controlX = (startX + endX) / 2;
+
+    return `M ${startX} ${startY} C ${controlX} ${startY}, ${controlX} ${endY}, ${endX} ${endY}`;
   };
 
   useEffect(() => {
@@ -574,6 +616,36 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
               />
             ))}
 
+            {isExecuting && (
+              <svg
+                className="canvas-connections execution-layer"
+                key={executionKey}
+              >
+                {connections.map((connection, index) => {
+                  const path = buildConnectionPath(
+                    connection.from,
+                    connection.to,
+                    connection.fromOffsetY,
+                  );
+                  if (!path) return null;
+                  return (
+                    <g key={`exec-${connection.id}`}>
+                      <path d={path} fill="none" stroke="none" />
+                      <circle className="execution-dot" r="4">
+                        <animateMotion
+                          dur="1.2s"
+                          begin={`${index * 0.2}s`}
+                          path={path}
+                          repeatCount="1"
+                          fill="freeze"
+                        />
+                      </circle>
+                    </g>
+                  );
+                })}
+              </svg>
+            )}
+
           </div>
         </div>
       </section>
@@ -650,6 +722,17 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
         ) : (
           <p className="panel-empty">Selecciona un nodo para ver detalles.</p>
         )}
+
+        <div className="panel-card" style={{ marginTop: "12px" }}>
+          <p className="panel-label">Ejecutar</p>
+          <button
+            className="btn-primary"
+            style={{ width: "100%" }}
+            onClick={handleExecuteWorkflow}
+          >
+            Ejecutar
+          </button>
+        </div>
 
         <div className="panel-card" style={{ marginTop: "12px" }}>
           <p className="panel-label">Validar workflow</p>
