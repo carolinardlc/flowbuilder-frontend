@@ -22,40 +22,32 @@ export type BackendWorkflow = {
   connections: BackendConnection[];
 };
 
-export type ExportHttpRequestNode = {
+export type ExportHttpNode = {
   id: string;
   name: string;
-  type: "HTTP_REQUEST";
-  config: {
-    method: "GET" | "POST";
-    url: string;
-    timeoutMs?: string;
-    retries?: string;
-    errorPolicy?: string;
-    outputMapping?: Record<string, string>;
-    output?: string;
-  };
+  type: "HTTP";
+  url: string;
+  method: "GET" | "POST";
+  politica?: "STOP" | "CONTINUE";
+  timeout?: number;
+  attempts?: number;
 };
 
 export type ExportCommandNode = {
   id: string;
   name: string;
   type: "COMMAND";
-  config: {
-    command: string;
-    args?: string;
-    input?: string;
-    output?: string;
-  };
+  command: string;
+  args?: string;
+  input?: string;
+  output?: string;
 };
 
 export type ExportConditionalNode = {
   id: string;
   name: string;
   type: "CONDITIONAL";
-  config: {
-    condition: string;
-  };
+  condition: string;
 };
 
 export type ExportStartNode = {
@@ -68,16 +60,14 @@ export type ExportEndNode = {
   id: string;
   name: string;
   type: "END";
-  config?: {
-    outputType?: string;
-    message?: string;
-  };
+  outputType?: string;
+  message?: string;
 };
 
 export type ExportNode =
   | ExportStartNode
   | ExportEndNode
-  | ExportHttpRequestNode
+  | ExportHttpNode
   | ExportConditionalNode
   | ExportCommandNode;
 
@@ -119,34 +109,26 @@ export const serializeWorkflowExport = (
 ): ExportWorkflow => {
   const exportNodes: ExportNode[] = nodes.map((node) => {
     if (node.type === "HTTP_REQUEST") {
-      const method = node.config?.method ?? "GET";
       const url = node.config?.url ?? "";
-
-      if (method === "POST") {
-        return {
-          id: node.id,
-          name: node.title,
-          type: "HTTP_REQUEST",
-          config: {
-            method,
-            url,
-            output: node.config?.httpOutput ?? "",
-          },
-        };
-      }
+      const method = node.config?.method ?? "GET";
+      const politica =
+        node.config?.errorPolicy === "CONTINUE" ? "CONTINUE" : "STOP";
+      const timeout = Number(node.config?.timeoutMs ?? "");
+      const attempts = Number(node.config?.retries ?? "");
 
       return {
         id: node.id,
         name: node.title,
-        type: "HTTP_REQUEST",
-        config: {
-          method,
-          url,
-          timeoutMs: node.config?.timeoutMs ?? "",
-          retries: node.config?.retries ?? "",
-          errorPolicy: node.config?.errorPolicy ?? "STOP_ON_FAIL",
-          outputMapping: node.config?.outputMapping ?? {},
-        },
+        type: "HTTP",
+        url,
+        method,
+        ...(method === "GET"
+          ? {
+              politica,
+              timeout: Number.isFinite(timeout) ? timeout : undefined,
+              attempts: Number.isFinite(attempts) ? attempts : undefined,
+            }
+          : {}),
       };
     }
 
@@ -155,12 +137,10 @@ export const serializeWorkflowExport = (
         id: node.id,
         name: node.title,
         type: "COMMAND",
-        config: {
-          command: node.config?.command ?? "",
-          args: node.config?.args ?? "",
-          input: node.config?.input ?? "",
-          output: node.config?.output ?? "",
-        },
+        command: node.config?.command ?? "",
+        args: node.config?.args ?? "",
+        input: node.config?.input ?? "",
+        output: node.config?.output ?? "",
       };
     }
 
@@ -169,9 +149,7 @@ export const serializeWorkflowExport = (
         id: node.id,
         name: node.title,
         type: "CONDITIONAL",
-        config: {
-          condition: node.config?.conditionExpression ?? "",
-        },
+        condition: node.config?.conditionExpression ?? "",
       };
     }
 
@@ -180,10 +158,8 @@ export const serializeWorkflowExport = (
         id: node.id,
         name: node.title,
         type: "END",
-        config: {
-          outputType: node.config?.outputType,
-          message: node.config?.message,
-        },
+        outputType: node.config?.outputType,
+        message: node.config?.message,
       };
     }
 

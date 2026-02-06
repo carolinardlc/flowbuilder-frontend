@@ -9,7 +9,7 @@ export type WorkflowNodeType =
   | "END"
   | "HTTP_REQUEST";
 
-export type HttpErrorPolicy = "STOP_ON_FAIL" | "CONTINUE";
+export type HttpErrorPolicy = "STOP" | "CONTINUE" | "STOP_ON_FAIL";
 
 export type HttpOutputMapping = Record<string, string>;
 

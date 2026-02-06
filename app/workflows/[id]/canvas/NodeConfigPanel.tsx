@@ -26,13 +26,15 @@ export default function NodeConfigPanel({
   const normalizeConfig = useCallback(
     (nodeType: WorkflowNodeData["type"], raw: NodeConfig["config"]) => {
       if (nodeType === "HTTP_REQUEST") {
+        const normalizedErrorPolicy =
+          raw.errorPolicy === "STOP_ON_FAIL" ? "STOP" : raw.errorPolicy;
         return {
           ...raw,
           method: raw.method ?? "GET",
           url: raw.url ?? "",
           timeoutMs: raw.timeoutMs ?? "",
           retries: raw.retries ?? "",
-          errorPolicy: raw.errorPolicy ?? "STOP_ON_FAIL",
+          errorPolicy: normalizedErrorPolicy ?? "STOP",
           headers: raw.headers ?? {},
           body: raw.body ?? "",
           httpOutput: raw.httpOutput ?? "",
@@ -294,20 +296,7 @@ export default function NodeConfigPanel({
                 />
               </div>
 
-              {config.config.method === "POST" ? (
-                <div className="form-group">
-                  <label className="form-label">Output</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={config.config.httpOutput ?? ""}
-                    onChange={(e) =>
-                      updateNestedConfig("httpOutput", e.target.value)
-                    }
-                    placeholder="Ej: context.token"
-                  />
-                </div>
-              ) : (
+              {config.config.method !== "POST" && (
                 <>
                   <div className="form-group">
                     <label className="form-label">Timeout (ms)</label>
@@ -341,12 +330,12 @@ export default function NodeConfigPanel({
                     <label className="form-label">Política de error</label>
                     <select
                       className="form-select"
-                      value={config.config.errorPolicy ?? "STOP_ON_FAIL"}
+                      value={config.config.errorPolicy ?? "STOP"}
                       onChange={(e) =>
                         updateNestedConfig("errorPolicy", e.target.value)
                       }
                     >
-                      <option value="STOP_ON_FAIL">STOP_ON_FAIL</option>
+                      <option value="STOP">STOP</option>
                       <option value="CONTINUE">CONTINUE</option>
                     </select>
                   </div>
