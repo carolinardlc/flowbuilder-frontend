@@ -12,7 +12,10 @@ import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useDragAndDrop } from "./hooks/useDragAndDrop";
 import { useConnections } from "./hooks/useConnections";
 import { createNode } from "./utils/nodeUtils";
-import { serializeWorkflow } from "./utils/serializeWorkflow";
+import {
+  serializeWorkflow,
+  serializeWorkflowExport,
+} from "./utils/serializeWorkflow";
 import type { CanvasProps } from "./types";
 import { useWorkflows } from "../../../context/WorkflowsContext";
 
@@ -187,7 +190,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
   }, []);
 
   const handleDownloadJson = () => {
-    const payload = serializeWorkflow(
+    const payload = serializeWorkflowExport(
       workflowId,
       workflowName ?? `Workflow ${workflowId}`,
       nodes,
