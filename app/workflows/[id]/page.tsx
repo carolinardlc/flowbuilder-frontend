@@ -24,7 +24,7 @@ export default async function WorkflowsDetail({
                 Detalles
               </Link>
               <Link href="/workflows" className="btn-secondary link-button">
-                Volver a workflows
+                &lt; Volver a workflows
               </Link>
             </>
           }

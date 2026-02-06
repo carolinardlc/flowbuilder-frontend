@@ -22,7 +22,7 @@ export default async function CanvasPage({ params }: CanvasPageProps) {
                 Detalles
               </Link>
               <Link href="/workflows" className="btn-secondary link-button">
-                Volver a workflows
+                &lt; Volver a workflows
               </Link>
             </>
           }
