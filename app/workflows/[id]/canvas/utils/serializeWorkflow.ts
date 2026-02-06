@@ -47,7 +47,6 @@ export type ExportConditionalNode = {
   id: string;
   name: string;
   type: "CONDITIONAL";
-  condition: string;
 };
 
 export type ExportStartNode = {
@@ -149,7 +148,6 @@ export const serializeWorkflowExport = (
         id: node.id,
         name: node.title,
         type: "CONDITIONAL",
-        condition: node.config?.conditionExpression ?? "",
       };
     }
 

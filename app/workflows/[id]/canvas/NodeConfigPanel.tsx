@@ -355,26 +355,6 @@ export default function NodeConfigPanel({
             </div>
           )}
 
-          {node.type === "CONDITIONAL" && (
-            <div className="config-section">
-              <h4 className="config-section-title">
-                Configuración de Condición
-              </h4>
-              <div className="form-group">
-                <label className="form-label">Condición</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={config.config.conditionExpression ?? ""}
-                  onChange={(e) =>
-                    updateNestedConfig("conditionExpression", e.target.value)
-                  }
-                  placeholder="Ej: context.status == 200"
-                />
-              </div>
-            </div>
-          )}
-
           {node.type === "END" && (
             <div className="config-section">
               <h4 className="config-section-title">Configuración de Fin</h4>

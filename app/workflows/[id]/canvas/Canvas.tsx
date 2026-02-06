@@ -337,9 +337,6 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
         }
       }
       if (node.type === "CONDITIONAL") {
-        if (!node.config?.conditionExpression) {
-          errors.push(`Config incompleta en Condicional: ${node.title}.`);
-        }
       }
       if (node.type === "END") {
         if (!node.config?.outputType || !node.config?.message) {
