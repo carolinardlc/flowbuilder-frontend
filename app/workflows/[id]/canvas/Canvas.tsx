@@ -169,11 +169,32 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
 
   const incomingNodeOptions = (() => {
     if (!selectedNode || selectedNode.type !== "CONDITIONAL") return [];
-    const incomingIds = connections
-      .filter((c) => c.to === selectedNode.id)
-      .map((c) => c.from);
-    const uniqueIncomingIds = Array.from(new Set(incomingIds));
-    return uniqueIncomingIds
+
+    const incomingByTo = new Map<string, string[]>();
+    connections.forEach((c) => {
+      const list = incomingByTo.get(c.to) ?? [];
+      list.push(c.from);
+      incomingByTo.set(c.to, list);
+    });
+
+    const visited = new Set<string>();
+    const resultIds: string[] = [];
+    const stack: string[] = [...(incomingByTo.get(selectedNode.id) ?? [])];
+
+    while (stack.length > 0) {
+      const currentId = stack.pop();
+      if (!currentId) continue;
+      if (visited.has(currentId)) continue;
+      visited.add(currentId);
+      resultIds.push(currentId);
+
+      const parents = incomingByTo.get(currentId) ?? [];
+      parents.forEach((p) => {
+        if (!visited.has(p)) stack.push(p);
+      });
+    }
+
+    return resultIds
       .map((id) => nodes.find((n) => n.id === id))
       .filter((n): n is NonNullable<typeof n> => !!n)
       .map((n) => ({ id: n.id, name: n.title, type: n.type }));
