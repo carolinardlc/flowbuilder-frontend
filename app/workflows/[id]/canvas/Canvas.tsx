@@ -167,6 +167,18 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
   const [backendTerminalOutput, setBackendTerminalOutput] =
     useState<string>("");
 
+  const incomingNodeOptions = (() => {
+    if (!selectedNode || selectedNode.type !== "CONDITIONAL") return [];
+    const incomingIds = connections
+      .filter((c) => c.to === selectedNode.id)
+      .map((c) => c.from);
+    const uniqueIncomingIds = Array.from(new Set(incomingIds));
+    return uniqueIncomingIds
+      .map((id) => nodes.find((n) => n.id === id))
+      .filter((n): n is NonNullable<typeof n> => !!n)
+      .map((n) => ({ id: n.id, name: n.title, type: n.type }));
+  })();
+
   // Manejo de eliminación de nodo
   const handleDeleteNodeComplete = (nodeId: string) => {
     handleDeleteNode(nodeId);
@@ -782,6 +794,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
         isOpen={isConfigPanelOpen}
         onClose={handleCloseConfig}
         onSave={handleSaveConfig}
+        incomingNodeOptions={incomingNodeOptions}
       />
 
       {dragState.isDragging &&

@@ -9,6 +9,7 @@ type NodeConfigPanelProps = {
   onClose: () => void;
   onSave: (config: NodeConfig) => void;
   isOpen: boolean;
+  incomingNodeOptions?: { id: string; name: string; type: string }[];
 };
 
 /**
@@ -22,6 +23,7 @@ export default function NodeConfigPanel({
   onClose,
   onSave,
   isOpen,
+  incomingNodeOptions,
 }: NodeConfigPanelProps) {
   const normalizeConfig = useCallback(
     (nodeType: WorkflowNodeData["type"], raw: NodeConfig["config"]) => {
@@ -46,6 +48,7 @@ export default function NodeConfigPanel({
         return {
           ...raw,
           conditionExpression: raw.conditionExpression ?? "",
+          sourceNodeId: raw.sourceNodeId ?? "",
         };
       }
 
@@ -307,6 +310,32 @@ export default function NodeConfigPanel({
                   </div>
                 </>
               )}
+            </div>
+          )}
+
+          {node.type === "CONDITIONAL" && (
+            <div className="config-section">
+              <h4 className="config-section-title">
+                Configuración de Condicional
+              </h4>
+
+              <div className="form-group">
+                <label className="form-label">Nodo previo</label>
+                <select
+                  className="form-select"
+                  value={config.config.sourceNodeId ?? ""}
+                  onChange={(e) =>
+                    updateNestedConfig("sourceNodeId", e.target.value)
+                  }
+                >
+                  <option value="">Selecciona un nodo</option>
+                  {(incomingNodeOptions ?? []).map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.name} ({option.type})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 

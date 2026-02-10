@@ -32,6 +32,7 @@ export interface WorkflowNodeData {
     httpOutput?: string;
     outputMapping?: HttpOutputMapping;
     conditionExpression?: string;
+    sourceNodeId?: string;
     command?: string;
     args?: string;
     input?: string;
@@ -83,6 +84,7 @@ export interface NodeConfig {
     httpOutput?: string;
     outputMapping?: HttpOutputMapping;
     conditionExpression?: string;
+    sourceNodeId?: string;
     command?: string;
     args?: string;
     input?: string;
