@@ -79,15 +79,6 @@ export default function NodeConfigPanel({
     config: node ? normalizeConfig(node.type, node.config || {}) : {},
   }));
 
-  const [outputMappingText, setOutputMappingText] = useState<string>(() => {
-    if (node?.type !== "HTTP_REQUEST") return "{}";
-    try {
-      return JSON.stringify(node.config?.outputMapping ?? {}, null, 2);
-    } catch {
-      return "{}";
-    }
-  });
-
   // Resetear config cuando cambia el nodo
   useEffect(() => {
     if (node) {
@@ -97,16 +88,6 @@ export default function NodeConfigPanel({
         type: node.type,
         config: normalizeConfig(node.type, node.config || {}),
       };
-
-      if (node.type === "HTTP_REQUEST") {
-        try {
-          setOutputMappingText(
-            JSON.stringify(newConfig.config.outputMapping ?? {}, null, 2),
-          );
-        } catch {
-          setOutputMappingText("{}");
-        }
-      }
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setConfig(newConfig);
     }
@@ -150,28 +131,13 @@ export default function NodeConfigPanel({
   }, []);
 
   const handleSave = useCallback(() => {
-    let outputMapping = config.config.outputMapping;
-    if (config.type === "HTTP_REQUEST") {
-      try {
-        const parsed = JSON.parse(outputMappingText || "{}");
-        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-          outputMapping = parsed as Record<string, string>;
-        }
-      } catch {
-        outputMapping = config.config.outputMapping ?? {};
-      }
-    }
-
     const normalized: NodeConfig = {
       ...config,
-      config: normalizeConfig(config.type, {
-        ...config.config,
-        outputMapping,
-      }),
+      config: normalizeConfig(config.type, config.config),
     };
     onSave(normalized);
     // onClose se llama automáticamente desde el padre en handleSaveConfig
-  }, [config, normalizeConfig, onSave, outputMappingText]);
+  }, [config, normalizeConfig, onSave]);
 
   if (!isOpen || !node) return null;
 
@@ -338,17 +304,6 @@ export default function NodeConfigPanel({
                       <option value="STOP">STOP</option>
                       <option value="CONTINUE">CONTINUE</option>
                     </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Mapeo de salida (JSON)</label>
-                    <textarea
-                      className="form-textarea"
-                      value={outputMappingText}
-                      onChange={(e) => setOutputMappingText(e.target.value)}
-                      placeholder='{"status":"$.status","payload":"$.data"}'
-                      rows={6}
-                    />
                   </div>
                 </>
               )}

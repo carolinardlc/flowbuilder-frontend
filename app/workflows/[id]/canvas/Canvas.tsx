@@ -164,6 +164,8 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     message: string;
   }>({ status: "idle", message: "" });
   const [isSendOpen, setIsSendOpen] = useState(false);
+  const [backendTerminalOutput, setBackendTerminalOutput] =
+    useState<string>("");
 
   // Manejo de eliminación de nodo
   const handleDeleteNodeComplete = (nodeId: string) => {
@@ -231,9 +233,27 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
         },
       );
 
+      const contentType = response.headers.get("content-type") ?? "";
+      let responseBodyText = "";
+      try {
+        if (contentType.includes("application/json")) {
+          const json = await response.json();
+          responseBodyText = JSON.stringify(json, null, 2);
+        } else {
+          responseBodyText = await response.text();
+        }
+      } catch {
+        responseBodyText = "";
+      }
+
       if (!response.ok) {
+        setBackendTerminalOutput(
+          responseBodyText || `Backend error: ${response.status}`,
+        );
         throw new Error(`Backend error: ${response.status}`);
       }
+
+      setBackendTerminalOutput(responseBodyText || "(sin contenido)");
 
       setSendResult({
         status: "ok",
@@ -242,6 +262,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Error desconocido.";
+      setBackendTerminalOutput(message);
       setSendResult({ status: "error", message });
     } finally {
       setIsSendOpen(true);
@@ -457,6 +478,16 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
             >
               Enviar al backend
             </button>
+          </div>
+
+          <div className="form-group" style={{ marginTop: "14px" }}>
+            <label className="form-label">Terminal de salida</label>
+            <textarea
+              className="form-textarea"
+              value={backendTerminalOutput}
+              readOnly
+              rows={10}
+            />
           </div>
         </aside>
       </div>
