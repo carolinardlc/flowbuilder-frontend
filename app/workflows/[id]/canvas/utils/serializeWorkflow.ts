@@ -101,13 +101,54 @@ const resolveCondition = (
   return offset <= 40;
 };
 
+const orderNodesByConnections = (
+  nodes: WorkflowNodeData[],
+  connections: Connection[],
+): WorkflowNodeData[] => {
+  const startNode = nodes.find((n) => n.type === "START");
+  if (!startNode) return nodes;
+
+  const outgoing = new Map<string, string[]>();
+  connections.forEach((c) => {
+    const list = outgoing.get(c.from) ?? [];
+    list.push(c.to);
+    outgoing.set(c.from, list);
+  });
+
+  const visited = new Set<string>();
+  const orderedIds: string[] = [];
+  const stack: string[] = [startNode.id];
+
+  while (stack.length > 0) {
+    const currentId = stack.pop();
+    if (!currentId) continue;
+    if (visited.has(currentId)) continue;
+    visited.add(currentId);
+    orderedIds.push(currentId);
+
+    const nextIds = outgoing.get(currentId) ?? [];
+    for (let i = nextIds.length - 1; i >= 0; i -= 1) {
+      const nextId = nextIds[i];
+      if (!visited.has(nextId)) stack.push(nextId);
+    }
+  }
+
+  const orderedNodes = orderedIds
+    .map((id) => nodes.find((n) => n.id === id))
+    .filter((n): n is NonNullable<typeof n> => !!n);
+
+  const remaining = nodes.filter((n) => !visited.has(n.id));
+  return [...orderedNodes, ...remaining];
+};
+
 export const serializeWorkflowExport = (
   workflowId: string,
   workflowName: string,
   nodes: WorkflowNodeData[],
   connections: Connection[],
 ): ExportWorkflow => {
-  const exportNodes: ExportNode[] = nodes.map((node) => {
+  const orderedNodes = orderNodesByConnections(nodes, connections);
+  const exportNodes: ExportNode[] = orderedNodes.map((node) => {
     if (node.type === "HTTP_REQUEST") {
       const url = node.config?.url ?? "";
       const method = node.config?.method ?? "GET";
@@ -198,7 +239,8 @@ export const serializeWorkflow = (
   nodes: WorkflowNodeData[],
   connections: Connection[],
 ): BackendWorkflow => {
-  const backendNodes = nodes.map((node) => {
+  const orderedNodes = orderNodesByConnections(nodes, connections);
+  const backendNodes = orderedNodes.map((node) => {
     const base: BackendNode = {
       id: node.id,
       name: node.title,
