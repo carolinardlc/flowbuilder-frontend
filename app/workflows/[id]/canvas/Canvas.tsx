@@ -197,6 +197,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     return resultIds
       .map((id) => nodes.find((n) => n.id === id))
       .filter((n): n is NonNullable<typeof n> => !!n)
+      .filter((n) => n.type !== "START")
       .map((n) => ({ id: n.id, name: n.title, type: n.type }));
   })();
 
