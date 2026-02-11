@@ -661,6 +661,11 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                   setSelectedNodeId(nodeId);
                   setSelectedConnectionId(null);
                 }}
+                onDoubleClick={(nodeId) => {
+                  setSelectedNodeId(nodeId);
+                  setSelectedConnectionId(null);
+                  setIsConfigPanelOpen(true);
+                }}
                 onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
                 onConnectionClick={
                   dragState.isConnecting

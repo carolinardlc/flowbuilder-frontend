@@ -5,6 +5,7 @@ type WorkflowNodeProps = {
   node: WorkflowNodeData;
   selected: boolean;
   onSelect: (id: string) => void;
+  onDoubleClick?: (id: string) => void;
   onMouseDown?: (e: React.MouseEvent) => void;
   onConnectionClick?: () => void;
   isConnectionTarget?: boolean;
@@ -26,6 +27,7 @@ export default function WorkflowNode({
   node,
   selected,
   onSelect,
+  onDoubleClick,
   onMouseDown,
   onConnectionClick,
   isConnectionTarget,
@@ -86,6 +88,12 @@ export default function WorkflowNode({
             e.preventDefault();
             e.stopPropagation();
             onMouseDown(e);
+          }
+        }}
+        onDoubleClick={(e) => {
+          if (!readOnly) {
+            e.stopPropagation();
+            onDoubleClick?.(node.id);
           }
         }}
         aria-disabled={readOnly}

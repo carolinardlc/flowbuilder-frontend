@@ -83,7 +83,7 @@ export default function NodeConfigPanel({
   }));
 
   // Resetear config cuando cambia el nodo
-  useEffect(() => {
+useEffect(() => {
     if (node) {
       const newConfig: NodeConfig = {
         id: node.id,
@@ -95,6 +95,21 @@ export default function NodeConfigPanel({
       setConfig(newConfig);
     }
   }, [node]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   const updateConfig = useCallback(
     <K extends keyof NodeConfig>(field: K, value: NodeConfig[K]) => {
