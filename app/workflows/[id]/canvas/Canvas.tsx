@@ -251,7 +251,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
 
   const handleSendToBackend = async () => {
     try {
-      const payload = serializeWorkflow(
+      const payload = serializeWorkflowExport(
         workflowId,
         workflowName ?? `Workflow ${workflowId}`,
         nodes,

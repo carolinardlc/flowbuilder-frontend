@@ -74,7 +74,7 @@ export type ExportNode =
 export type ExportConnection = {
   fromNodeId: string;
   toNodeId: string;
-  condition?: boolean;
+  condition: boolean;
 };
 
 export type ExportWorkflow = {
@@ -220,7 +220,7 @@ export const serializeWorkflowExport = (
         condition:
           fromNode?.type === "CONDITIONAL"
             ? resolveCondition(connection, fromNode)
-            : undefined,
+            : true,
       };
     },
   );
