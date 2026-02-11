@@ -47,7 +47,7 @@ export type ExportConditionalNode = {
   id: string;
   name: string;
   type: "CONDITIONAL";
-  starget?: string;
+  target?: string;
 };
 
 export type ExportStartNode = {
@@ -149,7 +149,7 @@ export const serializeWorkflowExport = (
         id: node.id,
         name: node.title,
         type: "CONDITIONAL",
-        starget: node.config?.sourceNodeId || undefined,
+        target: node.config?.sourceNodeId || undefined,
       };
     }
 
