@@ -4,6 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import WorkflowConnection from "../../canvas/WorkflowConnection";
 import WorkflowNode from "../../canvas/WorkflowNode";
 import { STORAGE_KEYS } from "../../canvas/constants/storage";
+import {
+  deserializeWorkflowImport,
+  type ExportWorkflow,
+} from "../../canvas/utils/serializeWorkflow";
 import type {
   Connection,
   WorkflowNodeData,
@@ -15,9 +19,7 @@ type WorkflowDetailsCanvasProps = {
 };
 
 type CanvasSnapshot = {
-  nodes: Array<
-    WorkflowNodeData & { type: WorkflowNodeType | LegacyWorkflowNodeType }
-  >;
+  nodes: WorkflowNodeData[];
   connections: Connection[];
 };
 
@@ -29,16 +31,6 @@ const NODE_TYPE_LABELS: Record<WorkflowNodeType, string> = {
   CONDITIONAL: "Condicional",
   END: "Fin",
   HTTP_REQUEST: "HTTP Request",
-};
-
-type LegacyWorkflowNodeType = "ACTION" | "HTTP";
-
-const normalizeLegacyType = (
-  type: WorkflowNodeType | LegacyWorkflowNodeType,
-) => {
-  if (type === "ACTION") return "COMMAND" as const;
-  if (type === "HTTP") return "HTTP_REQUEST" as const;
-  return type;
 };
 
 export default function WorkflowDetailsCanvas({
@@ -53,16 +45,12 @@ export default function WorkflowDetailsCanvas({
     try {
       const raw = localStorage.getItem(storageKey);
       if (!raw) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSnapshot(EMPTY_SNAPSHOT);
         return;
       }
-      const parsed = JSON.parse(raw) as Partial<CanvasSnapshot>;
-      setSnapshot({
-        nodes: Array.isArray(parsed.nodes) ? parsed.nodes : [],
-        connections: Array.isArray(parsed.connections)
-          ? parsed.connections
-          : [],
-      });
+      const parsed = JSON.parse(raw) as ExportWorkflow;
+      setSnapshot(deserializeWorkflowImport(parsed));
     } catch (error) {
       console.error("Error loading canvas snapshot:", error);
       setSnapshot(EMPTY_SNAPSHOT);
@@ -72,8 +60,7 @@ export default function WorkflowDetailsCanvas({
   const summary = useMemo(() => {
     const counts = snapshot.nodes.reduce<Record<WorkflowNodeType, number>>(
       (acc, node) => {
-        const normalizedType = normalizeLegacyType(node.type);
-        acc[normalizedType] = (acc[normalizedType] ?? 0) + 1;
+        acc[node.type] = (acc[node.type] ?? 0) + 1;
         return acc;
       },
       { START: 0, COMMAND: 0, CONDITIONAL: 0, END: 0, HTTP_REQUEST: 0 },
@@ -159,7 +146,7 @@ export default function WorkflowDetailsCanvas({
           {snapshot.nodes.map((node) => (
             <WorkflowNode
               key={node.id}
-              node={{ ...node, type: normalizeLegacyType(node.type) }}
+              node={node}
               selected={false}
               onSelect={() => {}}
               readOnly

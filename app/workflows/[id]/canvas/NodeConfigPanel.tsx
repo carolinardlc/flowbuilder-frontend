@@ -226,6 +226,22 @@ useEffect(() => {
                   placeholder="Ej: process.py"
                 />
               </div>
+              <div className="form-group">
+                <label className="form-label">Archivo de script</label>
+                <input
+                  type="file"
+                  className="form-input"
+                  accept=".py,.sh,.bat,.cmd,.ps1,.js,.ts"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    updateNestedConfig("args", file.name);
+                  }}
+                />
+                <p style={{ marginTop: "6px", fontSize: "12px", color: "#6b7280" }}>
+                  Se usará el nombre del archivo como argumento del comando.
+                </p>
+              </div>
 
               <div className="form-group">
                 <label className="form-label">Input (opcional)</label>

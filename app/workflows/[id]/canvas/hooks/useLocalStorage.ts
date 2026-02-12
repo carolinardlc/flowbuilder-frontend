@@ -5,24 +5,29 @@
 import { useEffect, useState } from "react";
 import type { WorkflowNodeData, Connection } from "../types";
 import { STORAGE_KEYS } from "../constants/storage";
+import {
+  deserializeWorkflowImport,
+  serializeWorkflowExport,
+  type ExportWorkflow,
+} from "../utils/serializeWorkflow";
 
 interface UseLocalStorageProps {
   workflowId: string;
+  workflowName: string;
   nodes: WorkflowNodeData[];
   connections: Connection[];
   onNodesLoaded: (nodes: WorkflowNodeData[]) => void;
   onConnectionsLoaded: (connections: Connection[]) => void;
-  onNodeIdCounterUpdate: (counter: number) => void;
   onSetNextNodeId: (id: number) => void;
 }
 
 export function useLocalStorage({
   workflowId,
+  workflowName,
   nodes,
   connections,
   onNodesLoaded,
   onConnectionsLoaded,
-  onNodeIdCounterUpdate,
   onSetNextNodeId,
 }: UseLocalStorageProps) {
   const storageKey = STORAGE_KEYS.WORKFLOW_CANVAS(workflowId);
@@ -36,13 +41,10 @@ export function useLocalStorage({
       const raw = localStorage.getItem(storageKey);
       if (!raw) return;
 
-      const parsed = JSON.parse(raw) as {
-        nodes?: WorkflowNodeData[];
-        connections?: Connection[];
-      };
-
-      const loadedNodes = parsed.nodes ?? [];
-      const loadedConnections = parsed.connections ?? [];
+      const parsed = JSON.parse(raw) as ExportWorkflow;
+      const canvasSnapshot = deserializeWorkflowImport(parsed);
+      const loadedNodes = canvasSnapshot.nodes;
+      const loadedConnections = canvasSnapshot.connections;
 
       onNodesLoaded(loadedNodes);
       onConnectionsLoaded(loadedConnections);
@@ -54,7 +56,6 @@ export function useLocalStorage({
           .filter((x) => Number.isFinite(x))
           .reduce((a, b) => Math.max(a, b), 0) || 0;
 
-      onNodeIdCounterUpdate(maxNum + 1);
       onSetNextNodeId(maxNum + 1);
     } catch (err) {
       console.error("Error loading canvas from localStorage:", err);
@@ -65,7 +66,6 @@ export function useLocalStorage({
     storageKey,
     onNodesLoaded,
     onConnectionsLoaded,
-    onNodeIdCounterUpdate,
     onSetNextNodeId,
   ]);
 
@@ -75,7 +75,12 @@ export function useLocalStorage({
     if (!isHydrated) return;
 
     try {
-      const payload = { nodes, connections };
+      const payload = serializeWorkflowExport(
+        workflowId,
+        workflowName,
+        nodes,
+        connections,
+      );
       localStorage.setItem(storageKey, JSON.stringify(payload));
 
       const apiBase =
@@ -92,5 +97,5 @@ export function useLocalStorage({
     } catch (err) {
       console.error("Error saving canvas to localStorage:", err);
     }
-  }, [storageKey, nodes, connections, isHydrated, workflowId]);
+  }, [storageKey, nodes, connections, isHydrated, workflowId, workflowName]);
 }

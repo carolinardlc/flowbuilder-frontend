@@ -84,6 +84,11 @@ export type ExportWorkflow = {
   connections: ExportConnection[];
 };
 
+export type CanvasSnapshot = {
+  nodes: WorkflowNodeData[];
+  connections: Connection[];
+};
+
 const mapNodeType = (type: WorkflowNodeType): BackendNode["type"] => {
   if (type === "COMMAND") return "COMMAND";
   if (type === "HTTP_REQUEST") return "HTTP";
@@ -281,4 +286,99 @@ export const serializeWorkflow = (
     nodes: backendNodes,
     connections: backendConnections,
   };
+};
+
+const mapExportTypeToCanvasType = (type: ExportNode["type"]): WorkflowNodeType => {
+  if (type === "HTTP") return "HTTP_REQUEST";
+  return type;
+};
+
+const buildNodeConfigFromExport = (node: ExportNode): WorkflowNodeData["config"] => {
+  if (node.type === "HTTP") {
+    return {
+      method: node.method,
+      url: node.url,
+      timeoutMs:
+        typeof node.timeout === "number" && Number.isFinite(node.timeout)
+          ? String(node.timeout)
+          : "",
+      retries:
+        typeof node.attempts === "number" && Number.isFinite(node.attempts)
+          ? String(node.attempts)
+          : "",
+      errorPolicy: node.politica === "CONTINUE" ? "CONTINUE" : "STOP",
+    };
+  }
+
+  if (node.type === "COMMAND") {
+    return {
+      command: node.command,
+      args: node.args ?? "",
+      input: node.input ?? "",
+      output: node.output ?? "",
+    };
+  }
+
+  if (node.type === "CONDITIONAL") {
+    return {
+      sourceNodeId: node.target ?? "",
+    };
+  }
+
+  if (node.type === "END") {
+    return {
+      outputType:
+        node.outputType === "error" || node.outputType === "notification"
+          ? node.outputType
+          : "success",
+      message: node.message ?? "",
+    };
+  }
+
+  return {};
+};
+
+export const deserializeWorkflowImport = (
+  payload: ExportWorkflow,
+): CanvasSnapshot => {
+  const baseX = 120;
+  const baseY = 120;
+  const colGap = 260;
+  const rowGap = 150;
+  const maxCols = 4;
+
+  const nodes: WorkflowNodeData[] = payload.nodes.map((node, index) => {
+    const col = index % maxCols;
+    const row = Math.floor(index / maxCols);
+
+    return {
+      id: node.id,
+      title: node.name,
+      type: mapExportTypeToCanvasType(node.type),
+      x: baseX + col * colGap,
+      y: baseY + row * rowGap,
+      config: buildNodeConfigFromExport(node),
+    };
+  });
+
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+
+  const connections: Connection[] = payload.connections.map((connection, index) => {
+    const fromNode = nodesById.get(connection.fromNodeId);
+    const fromOffsetY =
+      fromNode?.type === "CONDITIONAL"
+        ? connection.condition
+          ? 24
+          : 56
+        : 40;
+
+    return {
+      id: `c-${index + 1}`,
+      from: connection.fromNodeId,
+      to: connection.toNodeId,
+      fromOffsetY,
+    };
+  });
+
+  return { nodes, connections };
 };

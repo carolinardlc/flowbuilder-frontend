@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import WorkflowConnection from "./WorkflowConnection";
 import WorkflowNode from "./WorkflowNode";
@@ -12,11 +11,8 @@ import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useDragAndDrop } from "./hooks/useDragAndDrop";
 import { useConnections } from "./hooks/useConnections";
 import { createNode } from "./utils/nodeUtils";
-import {
-  serializeWorkflow,
-  serializeWorkflowExport,
-} from "./utils/serializeWorkflow";
-import type { CanvasProps } from "./types";
+import { serializeWorkflowExport } from "./utils/serializeWorkflow";
+import type { CanvasProps, Connection, WorkflowNodeData } from "./types";
 import { useWorkflows } from "../../../context/WorkflowsContext";
 
 /**
@@ -63,22 +59,18 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
 
   // Funciones memorizadas para localStorage
   const handleNodesLoaded = useCallback(
-    (nodes: any[]) => {
+    (nodes: WorkflowNodeData[]) => {
       setNodes(nodes);
     },
     [setNodes],
   );
 
   const handleConnectionsLoaded = useCallback(
-    (connections: any[]) => {
+    (connections: Connection[]) => {
       setConnections(connections);
     },
     [setConnections],
   );
-
-  const handleNodeIdCounterUpdate = useCallback((counter: number) => {
-    // Actualizar el contador de nodos
-  }, []);
 
   const handleSetNextNodeId = useCallback((id: number) => {
     setNextNodeId(id);
@@ -87,11 +79,11 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
   // Hook para persistencia en localStorage
   useLocalStorage({
     workflowId,
+    workflowName: workflowName ?? `Workflow ${workflowId}`,
     nodes,
     connections,
     onNodesLoaded: handleNodesLoaded,
     onConnectionsLoaded: handleConnectionsLoaded,
-    onNodeIdCounterUpdate: handleNodeIdCounterUpdate,
     onSetNextNodeId: handleSetNextNodeId,
   });
 
