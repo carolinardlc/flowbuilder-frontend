@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useWorkflows } from "../context/WorkflowsContext"
 
 const navItems = [
   { label: "Inicio", href: "/" },
@@ -11,6 +12,34 @@ const navItems = [
 
 export default function Header() {
   const pathname = usePathname();
+
+  const { importWorkflows } = useWorkflows();
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+
+        if (!Array.isArray(data)) {
+          alert("Formato inválido");
+          return;
+        }
+
+        console.log("Data importada:", data);
+        importWorkflows(data);
+      } catch {
+        alert("Archivo inválido");
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
 
   const isActive = (href: string) => {
     if (href === "/") {
@@ -37,6 +66,17 @@ export default function Header() {
             </Link>
           ))}
         </nav>
+        <div>
+          <label className="nav-link cursor-pointer">
+            Importar
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              className="hidden"
+            />
+          </label>
+        </div>
       </div>
     </header>
   );
