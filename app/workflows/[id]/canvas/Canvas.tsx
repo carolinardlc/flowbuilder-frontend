@@ -15,6 +15,8 @@ import { serializeWorkflowExport } from "./utils/serializeWorkflow";
 import type { CanvasProps, Connection, WorkflowNodeData } from "./types";
 import { useWorkflows } from "../../../context/WorkflowsContext";
 
+const BACKEND_BASE_URL = "http://192.168.5.2:8080";
+
 /**
  * Componente principal del Canvas de Workflow
  *
@@ -158,6 +160,9 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
   const [isSendOpen, setIsSendOpen] = useState(false);
   const [backendTerminalOutput, setBackendTerminalOutput] =
     useState<string>("");
+  const [commandFilesByName, setCommandFilesByName] = useState<
+    Record<string, File>
+  >({});
 
   const incomingNodeOptions = (() => {
     if (!selectedNode || selectedNode.type !== "CONDITIONAL") return [];
@@ -241,6 +246,13 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     URL.revokeObjectURL(url);
   };
 
+  const handleCommandFileSelect = useCallback((file: File) => {
+    setCommandFilesByName((prev) => ({
+      ...prev,
+      [file.name]: file,
+    }));
+  }, []);
+
   const handleSendToBackend = async () => {
     try {
       const payload = serializeWorkflowExport(
@@ -249,15 +261,53 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
         nodes,
         connections,
       );
-
-      const response = await fetch(
-        "http://192.168.5.2:8080/api/workflows/run",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
+      const commandArgNames = Array.from(
+        new Set(
+          nodes
+            .filter((node) => node.type === "COMMAND")
+            .map((node) => node.config?.args?.trim() ?? "")
+            .filter(Boolean),
+        ),
       );
+
+      const missingFiles = commandArgNames.filter(
+        (fileName) => !commandFilesByName[fileName],
+      );
+
+      if (missingFiles.length > 0) {
+        const message = `Faltan archivos para argumentos COMMAND: ${missingFiles.join(", ")}`;
+        setBackendTerminalOutput(message);
+        setSendResult({ status: "error", message });
+        setIsSendOpen(true);
+        return;
+      }
+
+      const payloadWithArtifacts = {
+        ...payload,
+        artifacts: commandArgNames.map((name) => ({ name })),
+      };
+
+      const formData = new FormData();
+      formData.append(
+        "workflow",
+        new Blob([JSON.stringify(payloadWithArtifacts)], {
+          type: "application/json",
+        }),
+      );
+
+      commandArgNames.forEach((fileName) => {
+        const file = commandFilesByName[fileName];
+        if (file) {
+          formData.append("files", file, file.name);
+        }
+      });
+
+      const url = `${BACKEND_BASE_URL}/api/workflows/run`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        body: formData,
+      });
 
       const contentType = response.headers.get("content-type") ?? "";
       let responseBodyText = "";
@@ -813,6 +863,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
         isOpen={isConfigPanelOpen}
         onClose={handleCloseConfig}
         onSave={handleSaveConfig}
+        onCommandFileSelect={handleCommandFileSelect}
         incomingNodeOptions={incomingNodeOptions}
       />
 

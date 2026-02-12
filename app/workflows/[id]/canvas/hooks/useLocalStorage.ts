@@ -11,6 +11,8 @@ import {
   type ExportWorkflow,
 } from "../utils/serializeWorkflow";
 
+const BACKEND_BASE_URL = "http://192.168.5.2:8080";
+
 interface UseLocalStorageProps {
   workflowId: string;
   workflowName: string;
@@ -83,9 +85,7 @@ export function useLocalStorage({
       );
       localStorage.setItem(storageKey, JSON.stringify(payload));
 
-      const apiBase =
-        process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "";
-      const url = `${apiBase}/api/workflows/${workflowId}/canvas`;
+      const url = `${BACKEND_BASE_URL}/api/workflows/${workflowId}/canvas`;
 
       void fetch(url, {
         method: "PUT",
