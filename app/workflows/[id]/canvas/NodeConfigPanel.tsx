@@ -8,7 +8,6 @@ type NodeConfigPanelProps = {
   node: WorkflowNodeData | null;
   onClose: () => void;
   onSave: (config: NodeConfig) => void;
-  onCommandFileSelect?: (file: File) => void;
   isOpen: boolean;
   incomingNodeOptions?: { id: string; name: string; type: string }[];
 };
@@ -23,7 +22,6 @@ export default function NodeConfigPanel({
   node,
   onClose,
   onSave,
-  onCommandFileSelect,
   isOpen,
   incomingNodeOptions,
 }: NodeConfigPanelProps) {
@@ -227,23 +225,6 @@ useEffect(() => {
                   onChange={(e) => updateNestedConfig("args", e.target.value)}
                   placeholder="Ej: process.py"
                 />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Archivo de script</label>
-                <input
-                  type="file"
-                  className="form-input"
-                  accept=".py,.sh,.bat,.cmd,.ps1,.js,.ts"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    updateNestedConfig("args", file.name);
-                    onCommandFileSelect?.(file);
-                  }}
-                />
-                <p style={{ marginTop: "6px", fontSize: "12px", color: "#6b7280" }}>
-                  Se usará el nombre del archivo como argumento del comando.
-                </p>
               </div>
 
               <div className="form-group">
