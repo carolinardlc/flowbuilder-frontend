@@ -38,9 +38,6 @@ export type ExportCommandNode = {
   name: string;
   type: "COMMAND";
   command: string;
-  args?: string;
-  input?: string;
-  output?: string;
 };
 
 export type ExportConditionalNode = {
@@ -179,9 +176,6 @@ export const serializeWorkflowExport = (
         name: node.title,
         type: "COMMAND",
         command: node.config?.command ?? "",
-        args: node.config?.args ?? "",
-        input: node.config?.input ?? "",
-        output: node.config?.output ?? "",
       };
     }
 

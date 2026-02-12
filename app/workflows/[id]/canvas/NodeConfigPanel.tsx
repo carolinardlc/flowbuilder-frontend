@@ -56,9 +56,6 @@ export default function NodeConfigPanel({
         return {
           ...raw,
           command: raw.command ?? "",
-          args: raw.args ?? "",
-          input: raw.input ?? "",
-          output: raw.output ?? "",
         };
       }
 
@@ -83,7 +80,7 @@ export default function NodeConfigPanel({
   }));
 
   // Resetear config cuando cambia el nodo
-useEffect(() => {
+  useEffect(() => {
     if (node) {
       const newConfig: NodeConfig = {
         id: node.id,
@@ -206,46 +203,19 @@ useEffect(() => {
               <h4 className="config-section-title">Configuración de Command</h4>
               <div className="form-group">
                 <label className="form-label">Comando</label>
-                <input
-                  type="text"
-                  className="form-input"
+                <textarea
+                  className="form-textarea"
                   value={config.config.command ?? ""}
                   onChange={(e) =>
                     updateNestedConfig("command", e.target.value)
                   }
-                  placeholder="Ej: python"
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Argumentos</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={config.config.args ?? ""}
-                  onChange={(e) => updateNestedConfig("args", e.target.value)}
-                  placeholder="Ej: process.py"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Input (opcional)</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={config.config.input ?? ""}
-                  onChange={(e) => updateNestedConfig("input", e.target.value)}
-                  placeholder="Ej: context.rawData"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Output (opcional)</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={config.config.output ?? ""}
-                  onChange={(e) => updateNestedConfig("output", e.target.value)}
-                  placeholder="Ej: context.cleanedData"
+                  rows={8}
+                  style={{
+                    fontSize: "15px",
+                    minHeight: "180px",
+                    overflowY: "auto",
+                    resize: "vertical",
+                  }}
                 />
               </div>
             </div>
