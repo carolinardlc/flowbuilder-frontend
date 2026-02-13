@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import WorkflowConnection from "./WorkflowConnection";
 import WorkflowNode from "./WorkflowNode";
@@ -13,11 +12,11 @@ import { useDragAndDrop } from "./hooks/useDragAndDrop";
 import { useConnections } from "./hooks/useConnections";
 import { createNode } from "./utils/nodeUtils";
 import {
-  serializeWorkflow,
   serializeWorkflowExport,
 } from "./utils/serializeWorkflow";
-import type { CanvasProps } from "./types";
+import type { CanvasProps, Connection, WorkflowNodeData } from "./types";
 import { useWorkflows } from "../../../context/WorkflowsContext";
+import { validateWorkflow } from "./domain/validation";
 
 /**
  * Componente principal del Canvas de Workflow
@@ -63,20 +62,20 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
 
   // Funciones memorizadas para localStorage
   const handleNodesLoaded = useCallback(
-    (nodes: any[]) => {
-      setNodes(nodes);
+    (loadedNodes: WorkflowNodeData[]) => {
+      setNodes(loadedNodes);
     },
     [setNodes],
   );
 
   const handleConnectionsLoaded = useCallback(
-    (connections: any[]) => {
-      setConnections(connections);
+    (loadedConnections: Connection[]) => {
+      setConnections(loadedConnections);
     },
     [setConnections],
   );
 
-  const handleNodeIdCounterUpdate = useCallback((counter: number) => {
+  const handleNodeIdCounterUpdate = useCallback(() => {
     // Actualizar el contador de nodos
   }, []);
 
@@ -303,108 +302,10 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     }
   };
 
-  const getValidationErrors = () => {
-    const errors: string[] = [];
-    const startNodes = nodes.filter((node) => node.type === "START");
-
-    if (startNodes.length === 0) {
-      errors.push("Falta el nodo Inicio.");
-    } else if (startNodes.length > 1) {
-      errors.push("Hay más de un nodo Inicio.");
-    }
-
-    const adjacency = new Map<string, string[]>();
-    nodes.forEach((node) => adjacency.set(node.id, []));
-    connections.forEach((connection) => {
-      const list = adjacency.get(connection.from) ?? [];
-      list.push(connection.to);
-      adjacency.set(connection.from, list);
-    });
-
-    // Ciclos
-    const visited = new Set<string>();
-    const inStack = new Set<string>();
-    const cyclePaths: string[] = [];
-
-    const dfsCycle = (nodeId: string, path: string[]) => {
-      visited.add(nodeId);
-      inStack.add(nodeId);
-      const neighbors = adjacency.get(nodeId) ?? [];
-      for (const next of neighbors) {
-        if (!visited.has(next)) {
-          dfsCycle(next, [...path, next]);
-        } else if (inStack.has(next)) {
-          const cycleStartIndex = path.indexOf(next);
-          const cycle =
-            cycleStartIndex >= 0 ? path.slice(cycleStartIndex) : [nodeId, next];
-          cyclePaths.push(cycle.join(" → "));
-        }
-      }
-      inStack.delete(nodeId);
-    };
-
-    nodes.forEach((node) => {
-      if (!visited.has(node.id)) {
-        dfsCycle(node.id, [node.id]);
-      }
-    });
-
-    if (cyclePaths.length > 0) {
-      errors.push(
-        `Se detectaron bucles: ${Array.from(new Set(cyclePaths)).join(", ")}.`,
-      );
-    }
-
-    // Alcanzabilidad desde Inicio
-    if (startNodes.length >= 1) {
-      const reachable = new Set<string>();
-      const stack = [startNodes[0].id];
-      while (stack.length > 0) {
-        const current = stack.pop();
-        if (!current || reachable.has(current)) continue;
-        reachable.add(current);
-        const neighbors = adjacency.get(current) ?? [];
-        neighbors.forEach((next) => {
-          if (!reachable.has(next)) stack.push(next);
-        });
-      }
-
-      const unreachable = nodes.filter((node) => !reachable.has(node.id));
-      if (unreachable.length > 0) {
-        errors.push(
-          `Hay nodos no alcanzables desde Inicio: ${unreachable
-            .map((node) => node.title)
-            .join(", ")}.`,
-        );
-      }
-    }
-
-    // Configuración completa
-    nodes.forEach((node) => {
-      if (node.type === "COMMAND") {
-        if (!node.config?.command) {
-          errors.push(`Config incompleta en Command: ${node.title}.`);
-        }
-      }
-      if (node.type === "HTTP_REQUEST") {
-        if (!node.config?.method || !node.config?.url) {
-          errors.push(`Config incompleta en HTTP Request: ${node.title}.`);
-        }
-      }
-      if (node.type === "CONDITIONAL") {
-      }
-      if (node.type === "END") {
-        if (!node.config?.outputType || !node.config?.message) {
-          errors.push(`Config incompleta en Fin: ${node.title}.`);
-        }
-      }
-    });
-
-    return errors;
-  };
-
-  const validateWorkflow = () => {
-    const errors = getValidationErrors();
+  const runWorkflowValidation = () => {
+    const errors = validateWorkflow({ nodes, connections }).map(
+      (error) => error.message,
+    );
     if (errors.length === 0) {
       setValidationResult({
         status: "ok",
@@ -417,7 +318,9 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
   };
 
   const handleExecuteWorkflow = () => {
-    const errors = getValidationErrors();
+    const errors = validateWorkflow({ nodes, connections }).map(
+      (error) => error.message,
+    );
     if (errors.length > 0) {
       setValidationResult({ status: "error", messages: errors });
       setIsValidationOpen(true);
@@ -808,7 +711,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
           <button
             className="btn-primary"
             style={{ width: "100%" }}
-            onClick={validateWorkflow}
+            onClick={runWorkflowValidation}
           >
             Validar Workflow
           </button>
