@@ -16,6 +16,28 @@ interface UseLocalStorageProps {
   onSetNextNodeId: (id: number) => void;
 }
 
+const isValidNode = (value: unknown): value is WorkflowNodeData => {
+  if (!value || typeof value !== "object") return false;
+  const node = value as Partial<WorkflowNodeData>;
+  return (
+    typeof node.id === "string" &&
+    typeof node.title === "string" &&
+    typeof node.type === "string" &&
+    typeof node.x === "number" &&
+    typeof node.y === "number"
+  );
+};
+
+const isValidConnection = (value: unknown): value is Connection => {
+  if (!value || typeof value !== "object") return false;
+  const connection = value as Partial<Connection>;
+  return (
+    typeof connection.id === "string" &&
+    typeof connection.from === "string" &&
+    typeof connection.to === "string"
+  );
+};
+
 export function useLocalStorage({
   workflowId,
   nodes,
@@ -41,8 +63,18 @@ export function useLocalStorage({
         connections?: Connection[];
       };
 
-      const loadedNodes = parsed.nodes ?? [];
-      const loadedConnections = parsed.connections ?? [];
+      const loadedNodes = Array.isArray(parsed.nodes)
+        ? parsed.nodes.filter(isValidNode)
+        : [];
+      const nodeIds = new Set(loadedNodes.map((node) => node.id));
+      const loadedConnections = Array.isArray(parsed.connections)
+        ? parsed.connections.filter(
+            (connection) =>
+              isValidConnection(connection) &&
+              nodeIds.has(connection.from) &&
+              nodeIds.has(connection.to),
+          )
+        : [];
 
       onNodesLoaded(loadedNodes);
       onConnectionsLoaded(loadedConnections);

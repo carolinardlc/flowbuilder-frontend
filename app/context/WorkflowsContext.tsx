@@ -16,6 +16,7 @@ export type Workflow = {
 type WorkflowsContextValue = {
   workflows: Workflow[];
   addWorkflow: (workflow: Workflow) => void;
+  upsertWorkflow: (workflow: Workflow) => void;
   updateWorkflow: (workflow: Workflow) => void;
   deleteWorkflow: (id: string) => void;
   importWorkflows: (workflows: Workflow[]) => void;
@@ -64,6 +65,14 @@ export function WorkflowsProvider({ children }: { children: ReactNode }) {
       workflows,
       addWorkflow: (workflow: Workflow) =>
         setWorkflows((prev) => [workflow, ...prev]),
+      upsertWorkflow: (workflow: Workflow) =>
+        setWorkflows((prev) => {
+          const exists = prev.some((item) => item.id === workflow.id);
+          if (exists) {
+            return prev.map((item) => (item.id === workflow.id ? workflow : item));
+          }
+          return [workflow, ...prev];
+        }),
       updateWorkflow: (workflow: Workflow) =>
         setWorkflows((prev) =>
           prev.map((item) => (item.id === workflow.id ? workflow : item))

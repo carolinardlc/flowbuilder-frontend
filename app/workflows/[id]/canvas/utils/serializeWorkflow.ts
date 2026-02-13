@@ -145,6 +145,15 @@ export const serializeWorkflowExport = (
   connections: Connection[],
 ): ExportWorkflow => {
   const orderedNodes = orderNodesByConnections(nodes, connections);
+  const validNodeIds = new Set(nodes.map((node) => node.id));
+  const safeConnections = connections.filter(
+    (connection) =>
+      typeof connection.from === "string" &&
+      typeof connection.to === "string" &&
+      validNodeIds.has(connection.from) &&
+      validNodeIds.has(connection.to),
+  );
+
   const exportNodes: ExportNode[] = orderedNodes.map((node) => {
     if (node.type === "HTTP_REQUEST") {
       const url = node.config?.url ?? "";
@@ -205,7 +214,7 @@ export const serializeWorkflowExport = (
     };
   });
 
-  const exportConnections: ExportConnection[] = connections.map(
+  const exportConnections: ExportConnection[] = safeConnections.map(
     (connection) => {
       const fromNode = nodes.find((node) => node.id === connection.from);
       return {
@@ -234,6 +243,15 @@ export const serializeWorkflow = (
   connections: Connection[],
 ): BackendWorkflow => {
   const orderedNodes = orderNodesByConnections(nodes, connections);
+  const validNodeIds = new Set(nodes.map((node) => node.id));
+  const safeConnections = connections.filter(
+    (connection) =>
+      typeof connection.from === "string" &&
+      typeof connection.to === "string" &&
+      validNodeIds.has(connection.from) &&
+      validNodeIds.has(connection.to),
+  );
+
   const backendNodes = orderedNodes.map((node) => {
     const base: BackendNode = {
       id: node.id,
@@ -260,7 +278,7 @@ export const serializeWorkflow = (
     return base;
   });
 
-  const backendConnections = connections.map((connection) => {
+  const backendConnections = safeConnections.map((connection) => {
     const fromNode = nodes.find((node) => node.id === connection.from);
     return {
       fromNodeId: connection.from,
