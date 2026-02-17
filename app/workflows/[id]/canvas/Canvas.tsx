@@ -11,12 +11,16 @@ import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useDragAndDrop } from "./hooks/useDragAndDrop";
 import { useConnections } from "./hooks/useConnections";
 import { createNode } from "./utils/nodeUtils";
-import {
-  serializeWorkflowExport,
-} from "./utils/serializeWorkflow";
 import type { CanvasProps, Connection, WorkflowNodeData } from "./types";
 import { useWorkflows } from "../../../context/WorkflowsContext";
+import {
+  toBackendWorkflow,
+  toExportWorkflow,
+  type Workflow as WorkflowSerializationModel,
+} from "./domain/serialization";
 import { validateWorkflow } from "./domain/validation";
+import { postWorkflow } from "./services/workflowApi";
+import { downloadWorkflowJson } from "./services/workflowFile";
 
 /**
  * Componente principal del Canvas de Workflow
@@ -225,73 +229,38 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
   }, []);
 
   const handleDownloadJson = () => {
-    const payload = serializeWorkflowExport(
-      workflowId,
-      workflowName ?? `Workflow ${workflowId}`,
+    // Refactor: serialización y descarga delegadas a dominio + servicio.
+    const workflowModel: WorkflowSerializationModel = {
+      id: workflowId,
+      name: workflowName ?? `Workflow ${workflowId}`,
       nodes,
       connections,
-    );
-    const json = JSON.stringify(payload, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const safeName = (workflowName ?? `workflow-${workflowId}`)
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-_]/g, "");
-    link.href = url;
-    link.download = `${safeName || "workflow"}.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    };
+    const payload = toExportWorkflow(workflowModel);
+    downloadWorkflowJson(payload, workflowModel.name);
   };
 
   const handleSendToBackend = async () => {
     try {
-      const payload = serializeWorkflowExport(
-        workflowId,
-        workflowName ?? `Workflow ${workflowId}`,
+      // Refactor: mapeo backend y llamada de red aislados de la UI.
+      const workflowModel: WorkflowSerializationModel = {
+        id: workflowId,
+        name: workflowName ?? `Workflow ${workflowId}`,
         nodes,
         connections,
-      );
+      };
+      const payload = toBackendWorkflow(workflowModel);
+      const result = await postWorkflow(payload);
 
-      const response = await fetch(
-        "http://192.168.5.2:8080/api/workflows/run",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
-      );
-
-      const contentType = response.headers.get("content-type") ?? "";
-      let responseBodyText = "";
-      try {
-        if (contentType.includes("application/json")) {
-          const json = await response.json();
-          responseBodyText = JSON.stringify(json, null, 2);
-        } else {
-          responseBodyText = await response.text();
-        }
-      } catch {
-        responseBodyText = "";
-      }
-
-      if (!response.ok) {
+      if (!result.ok) {
         setBackendTerminalOutput(
-          responseBodyText || `Backend error: ${response.status}`,
+          result.bodyText || `Backend error: ${result.status}`,
         );
-        throw new Error(`Backend error: ${response.status}`);
+        throw new Error(`Backend error: ${result.status}`);
       }
 
-      setBackendTerminalOutput(responseBodyText || "(sin contenido)");
-
-      setSendResult({
-        status: "ok",
-        message: "Workflow enviado correctamente.",
-      });
+      setBackendTerminalOutput(result.bodyText || "(sin contenido)");
+      setSendResult({ status: "ok", message: "Workflow enviado correctamente." });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Error desconocido.";

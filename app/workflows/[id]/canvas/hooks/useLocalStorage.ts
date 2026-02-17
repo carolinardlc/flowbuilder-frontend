@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import type { WorkflowNodeData, Connection } from "../types";
 import { STORAGE_KEYS } from "../constants/storage";
+import { syncWorkflowCanvasSnapshot } from "../services/workflowApi";
 
 interface UseLocalStorageProps {
   workflowId: string;
@@ -109,18 +110,8 @@ export function useLocalStorage({
     try {
       const payload = { nodes, connections };
       localStorage.setItem(storageKey, JSON.stringify(payload));
-
-      const apiBase =
-        process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "";
-      const url = `${apiBase}/api/workflows/${workflowId}/canvas`;
-
-      void fetch(url, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
+      // Refactor: la sincronización remota sale del hook y vive en services/.
+      void syncWorkflowCanvasSnapshot(workflowId, payload);
     } catch (err) {
       console.error("Error saving canvas to localStorage:", err);
     }
