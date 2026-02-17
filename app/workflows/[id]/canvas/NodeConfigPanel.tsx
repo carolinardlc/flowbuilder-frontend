@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { getNodeTypeBadgeClass } from "./constants/nodeTypes";
 import type { WorkflowNodeData, NodeConfig } from "./types";
+import { nodeConfigStrategies } from "./domain/nodeConfig";
 
 type NodeConfigPanelProps = {
   node: WorkflowNodeData | null;
@@ -25,59 +26,14 @@ export default function NodeConfigPanel({
   isOpen,
   incomingNodeOptions,
 }: NodeConfigPanelProps) {
-  const normalizeConfig = useCallback(
-    (nodeType: WorkflowNodeData["type"], raw: NodeConfig["config"]) => {
-      if (nodeType === "HTTP_REQUEST") {
-        const normalizedErrorPolicy =
-          raw.errorPolicy === "STOP_ON_FAIL" ? "STOP" : raw.errorPolicy;
-        return {
-          ...raw,
-          method: raw.method ?? "GET",
-          url: raw.url ?? "",
-          timeoutMs: raw.timeoutMs ?? "",
-          retries: raw.retries ?? "",
-          errorPolicy: normalizedErrorPolicy ?? "STOP",
-          headers: raw.headers ?? {},
-          body: raw.body ?? "",
-          httpOutput: raw.httpOutput ?? "",
-          outputMapping: raw.outputMapping ?? {},
-        };
-      }
-
-      if (nodeType === "CONDITIONAL") {
-        return {
-          ...raw,
-          conditionExpression: raw.conditionExpression ?? "",
-          sourceNodeId: raw.sourceNodeId ?? "",
-        };
-      }
-
-      if (nodeType === "COMMAND") {
-        return {
-          ...raw,
-          command: raw.command ?? "",
-        };
-      }
-
-      if (nodeType === "END") {
-        return {
-          ...raw,
-          outputType: raw.outputType ?? "success",
-          message: raw.message ?? "",
-        };
-      }
-
-      return { ...raw };
-    },
-    [],
-  );
-
+  const strategy = node ? nodeConfigStrategies[node.type] : null;
   const [config, setConfig] = useState<NodeConfig>(() => ({
     id: node?.id || "",
     title: node?.title || "",
     type: node?.type || "COMMAND",
-    config: node ? normalizeConfig(node.type, node.config || {}) : {},
+    config: node ? nodeConfigStrategies[node.type].normalizeConfig(node.config || {}) : {},
   }));
+  const [formErrors, setFormErrors] = useState<string[]>([]);
 
   // Resetear config cuando cambia el nodo
   useEffect(() => {
@@ -86,10 +42,11 @@ export default function NodeConfigPanel({
         id: node.id,
         title: node.title,
         type: node.type,
-        config: normalizeConfig(node.type, node.config || {}),
+        config: nodeConfigStrategies[node.type].normalizeConfig(node.config || {}),
       };
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setConfig(newConfig);
+      setFormErrors([]);
     }
   }, [node]);
 
@@ -146,15 +103,24 @@ export default function NodeConfigPanel({
   }, []);
 
   const handleSave = useCallback(() => {
+    if (!strategy) return;
+    const errors = strategy
+      .validateConfig(config.config)
+      .map((error) => error.message);
+    if (errors.length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
     const normalized: NodeConfig = {
       ...config,
-      config: normalizeConfig(config.type, config.config),
+      config: strategy.normalizeConfig(config.config),
     };
     onSave(normalized);
     // onClose se llama automáticamente desde el padre en handleSaveConfig
-  }, [config, normalizeConfig, onSave]);
+  }, [config, onSave, strategy]);
 
-  if (!isOpen || !node) return null;
+  if (!isOpen || !node || !strategy) return null;
 
   return (
     <div className="config-panel-overlay">
@@ -181,183 +147,19 @@ export default function NodeConfigPanel({
               onChange={(e) => updateConfig("title", e.target.value)}
             />
           </div>
-
-          {node.type === "START" && (
-            <div className="config-section">
-              <h4 className="config-section-title">Configuración de Inicio</h4>
-              <p
-                style={{
-                  fontSize: "13px",
-                  color: "#6b7280",
-                  marginBottom: "16px",
-                }}
-              >
-                El nodo de inicio no requiere configuración adicional. Solo
-                puedes modificar el título del nodo.
-              </p>
-            </div>
-          )}
-
-          {node.type === "COMMAND" && (
-            <div className="config-section">
-              <h4 className="config-section-title">Configuración de Command</h4>
-              <div className="form-group">
-                <label className="form-label">Comando</label>
-                <textarea
-                  className="form-textarea"
-                  value={config.config.command ?? ""}
-                  onChange={(e) =>
-                    updateNestedConfig("command", e.target.value)
-                  }
-                  rows={8}
-                  style={{
-                    fontSize: "15px",
-                    minHeight: "180px",
-                    overflowY: "auto",
-                    resize: "vertical",
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {node.type === "HTTP_REQUEST" && (
-            <div className="config-section">
-              <h4 className="config-section-title">
-                Configuración de HTTP Request
-              </h4>
-
-              <div className="form-group">
-                <label className="form-label">Método</label>
-                <select
-                  className="form-select"
-                  value={config.config.method ?? "GET"}
-                  onChange={(e) => updateNestedConfig("method", e.target.value)}
-                >
-                  <option value="GET">GET</option>
-                  <option value="POST">POST</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">URL</label>
-                <input
-                  type="url"
-                  className="form-input"
-                  value={config.config.url ?? ""}
-                  onChange={(e) => updateNestedConfig("url", e.target.value)}
-                  placeholder="https://api.example.com/data"
-                />
-              </div>
-
-              {config.config.method !== "POST" && (
-                <>
-                  <div className="form-group">
-                    <label className="form-label">Timeout (ms)</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={config.config.timeoutMs ?? ""}
-                      onChange={(e) =>
-                        updateNestedConfig("timeoutMs", e.target.value)
-                      }
-                      placeholder="5000"
-                      min={0}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Reintentos</label>
-                    <input
-                      type="number"
-                      className="form-input"
-                      value={config.config.retries ?? ""}
-                      onChange={(e) =>
-                        updateNestedConfig("retries", e.target.value)
-                      }
-                      placeholder="3"
-                      min={0}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Política de error</label>
-                    <select
-                      className="form-select"
-                      value={config.config.errorPolicy ?? "STOP"}
-                      onChange={(e) =>
-                        updateNestedConfig("errorPolicy", e.target.value)
-                      }
-                    >
-                      <option value="STOP">STOP</option>
-                      <option value="CONTINUE">CONTINUE</option>
-                    </select>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
-          {node.type === "CONDITIONAL" && (
-            <div className="config-section">
-              <h4 className="config-section-title">
-                Configuración de Condicional
-              </h4>
-
-              <div className="form-group">
-                <label className="form-label">Nodo previo</label>
-                <select
-                  className="form-select"
-                  value={config.config.sourceNodeId ?? ""}
-                  onChange={(e) =>
-                    updateNestedConfig("sourceNodeId", e.target.value)
-                  }
-                >
-                  <option value="">Selecciona un nodo</option>
-                  {(incomingNodeOptions ?? []).map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name} ({option.type})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
-          {node.type === "END" && (
-            <div className="config-section">
-              <h4 className="config-section-title">Configuración de Fin</h4>
-              <div className="form-group">
-                <label className="form-label">Tipo de Salida</label>
-                <select
-                  className="form-select"
-                  value={config.config.outputType || "success"}
-                  onChange={(e) =>
-                    updateNestedConfig("outputType", e.target.value)
-                  }
-                >
-                  <option value="success">Éxito</option>
-                  <option value="error">Error</option>
-                  <option value="notification">Notificación</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Mensaje</label>
-                <textarea
-                  className="form-textarea"
-                  value={config.config.message || ""}
-                  onChange={(e) =>
-                    updateNestedConfig("message", e.target.value)
-                  }
-                  placeholder="Workflow completado exitosamente"
-                  rows={3}
-                />
-              </div>
-            </div>
-          )}
+          {strategy.renderConfigForm({
+            config,
+            updateNestedConfig,
+            incomingNodeOptions,
+          })}
         </div>
 
         <div className="config-panel-footer">
+          {formErrors.length > 0 && (
+            <p className="form-error" style={{ marginRight: "auto" }}>
+              {formErrors[0]}
+            </p>
+          )}
           <button className="btn-secondary" onClick={onClose}>
             Cancelar
           </button>
