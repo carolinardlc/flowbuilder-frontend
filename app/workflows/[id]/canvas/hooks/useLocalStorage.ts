@@ -2,7 +2,7 @@
  * Hook personalizado para manejar persistencia en localStorage
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { WorkflowNodeData, Connection } from "../types";
 import { STORAGE_KEYS } from "../constants/storage";
 import { syncWorkflowCanvasSnapshot } from "../services/workflowApi";
@@ -50,10 +50,12 @@ export function useLocalStorage({
 }: UseLocalStorageProps) {
   const storageKey = STORAGE_KEYS.WORKFLOW_CANVAS(workflowId);
   const [isHydrated, setIsHydrated] = useState(false);
+  const hasSkippedInitialSave = useRef(false);
 
   // Cargar datos desde localStorage
   useEffect(() => {
     if (!storageKey) return;
+    hasSkippedInitialSave.current = false;
 
     try {
       const raw = localStorage.getItem(storageKey);
@@ -106,6 +108,10 @@ export function useLocalStorage({
   useEffect(() => {
     if (!storageKey) return;
     if (!isHydrated) return;
+    if (!hasSkippedInitialSave.current) {
+      hasSkippedInitialSave.current = true;
+      return;
+    }
 
     try {
       const payload = { nodes, connections };

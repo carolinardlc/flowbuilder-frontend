@@ -1,7 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  loadWorkflowsFromStorage,
+  removeWorkflowCanvasFromStorage,
+  saveWorkflowsToStorage,
+} from "./workflowStorage";
 
 type WorkflowStatus = "ACTIVE" | "IN_PROGRESS" | "DONE";
 
@@ -59,6 +64,21 @@ const initialWorkflows: Workflow[] = [
 
 export function WorkflowsProvider({ children }: { children: ReactNode }) {
   const [workflows, setWorkflows] = useState<Workflow[]>(initialWorkflows);
+  const [isStorageHydrated, setIsStorageHydrated] = useState(false);
+
+  useEffect(() => {
+    const loaded = loadWorkflowsFromStorage();
+    if (loaded) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setWorkflows(loaded);
+    }
+    setIsStorageHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isStorageHydrated) return;
+    saveWorkflowsToStorage(workflows);
+  }, [workflows, isStorageHydrated]);
 
   const value = useMemo(
     () => ({
@@ -78,7 +98,10 @@ export function WorkflowsProvider({ children }: { children: ReactNode }) {
           prev.map((item) => (item.id === workflow.id ? workflow : item))
         ),
       deleteWorkflow: (id: string) =>
-        setWorkflows((prev) => prev.filter((item) => item.id !== id)),
+        setWorkflows((prev) => {
+          removeWorkflowCanvasFromStorage(id);
+          return prev.filter((item) => item.id !== id);
+        }),
       importWorkflows: (newWorkflows: Workflow[]) =>
         setWorkflows(newWorkflows),
     }),
