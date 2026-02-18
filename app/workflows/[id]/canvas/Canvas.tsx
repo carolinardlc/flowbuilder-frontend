@@ -20,7 +20,6 @@ import {
 } from "./domain/serialization";
 import { validateWorkflow } from "./domain/validation";
 import { postWorkflow } from "./services/workflowApi";
-import { downloadWorkflowJson } from "./services/workflowFile";
 
 /**
  * Componente principal del Canvas de Workflow
@@ -237,7 +236,6 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
       connections,
     };
     const payload = toExportWorkflow(workflowModel);
-    downloadWorkflowJson(payload, workflowModel.name);
   };
 
   const handleSendToBackend = async () => {
