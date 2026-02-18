@@ -17,7 +17,7 @@ test("toBackendWorkflow serializa nodos y conexiones validas", () => {
         id: "n3",
         type: "HTTP_REQUEST",
         title: "HTTP",
-        config: { url: "https://api.example.com" },
+        config: { method: "GET", index: "Elden Ring" },
       }),
     ],
     [createConnection("n1", "n2"), createConnection("n2", "n3")],
@@ -28,6 +28,7 @@ test("toBackendWorkflow serializa nodos y conexiones validas", () => {
   assert.equal(result.nodes[1]?.type, "COMMAND");
   assert.equal(result.nodes[1]?.commandType, "ADD");
   assert.equal(result.nodes[2]?.type, "HTTP");
+  assert.equal((result.nodes[2] as any)?.index, 2);
   assert.equal(result.connections.length, 2);
 });
 

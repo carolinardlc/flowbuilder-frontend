@@ -72,7 +72,7 @@ export function toExportWorkflow(workflow: Workflow): ExportWorkflowJson {
         id: node.id,
         name: node.title,
         type: "CONDITIONAL" as const,
-        target: node.config?.sourceNodeId || undefined,
+        target: node.config?.sourceNodeId ?? "",
       };
     }
 

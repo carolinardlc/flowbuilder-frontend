@@ -249,7 +249,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
         nodes,
         connections,
       };
-      const payload = toBackendWorkflow(workflowModel);
+      const payload = toExportWorkflow(workflowModel);
       const result = await postWorkflow(payload);
 
       if (!result.ok) {
@@ -260,7 +260,10 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
       }
 
       setBackendTerminalOutput(result.bodyText || "(sin contenido)");
-      setSendResult({ status: "ok", message: "Workflow enviado correctamente." });
+      setSendResult({
+        status: "ok",
+        message: "Workflow enviado correctamente.",
+      });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Error desconocido.";

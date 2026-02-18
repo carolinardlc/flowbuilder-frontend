@@ -1,4 +1,4 @@
-import type { BackendWorkflowPayload } from "../domain/serialization";
+import type { ExportWorkflowJson } from "../domain/serialization";
 import type { Connection, WorkflowNodeData } from "../types";
 
 export const DEFAULT_WORKFLOW_RUN_ENDPOINT =
@@ -31,7 +31,7 @@ const parseResponseBody = async (response: Response): Promise<string> => {
 
 // Servicio de red aislado para POST de workflows.
 export async function postWorkflow(
-  payload: BackendWorkflowPayload,
+  payload: ExportWorkflowJson,
   endpoint: string = DEFAULT_WORKFLOW_RUN_ENDPOINT,
 ): Promise<WorkflowApiResult> {
   const response = await fetch(endpoint, {

@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { postWorkflow, syncWorkflowCanvasSnapshot } from "../workflowApi";
-import type { BackendWorkflowPayload } from "../../domain/serialization";
+import type { ExportWorkflowJson } from "../../domain/serialization";
 
-const payload: BackendWorkflowPayload = {
+const payload: ExportWorkflowJson = {
   id: "wf-1",
   name: "Workflow API Test",
   nodes: [],
@@ -15,7 +15,10 @@ test("postWorkflow envia payload y retorna respuesta exitosa", async () => {
   const fetchMock = async (input: RequestInfo | URL, init?: RequestInit) => {
     assert.equal(String(input), "http://localhost:8080/api/workflows/run");
     assert.equal(init?.method, "POST");
-    assert.equal(init?.headers && (init.headers as Record<string, string>)["Content-Type"], "application/json");
+    assert.equal(
+      init?.headers && (init.headers as Record<string, string>)["Content-Type"],
+      "application/json",
+    );
     assert.equal(typeof init?.body, "string");
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
@@ -49,7 +52,10 @@ test("postWorkflow retorna error de backend sin lanzar excepcion", async () => {
   globalThis.fetch = fetchMock as typeof fetch;
 
   try {
-    const result = await postWorkflow(payload, "http://localhost:8080/api/workflows/run");
+    const result = await postWorkflow(
+      payload,
+      "http://localhost:8080/api/workflows/run",
+    );
     assert.equal(result.ok, false);
     assert.equal(result.status, 500);
     assert.equal(result.bodyText, "backend error");
@@ -68,7 +74,11 @@ test("syncWorkflowCanvasSnapshot no llama backend sin apiBaseUrl", async () => {
   globalThis.fetch = fetchMock as typeof fetch;
 
   try {
-    await syncWorkflowCanvasSnapshot("wf-1", { nodes: [], connections: [] }, "");
+    await syncWorkflowCanvasSnapshot(
+      "wf-1",
+      { nodes: [], connections: [] },
+      "",
+    );
     assert.equal(called, false);
   } finally {
     globalThis.fetch = originalFetch;

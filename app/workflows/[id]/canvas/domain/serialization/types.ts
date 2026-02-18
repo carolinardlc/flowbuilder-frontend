@@ -15,6 +15,7 @@ export type BackendNodePayload = {
   commandType?: string;
   value?: string;
   inputKey?: string;
+  index?: number;
 };
 
 export type BackendConnectionPayload = {

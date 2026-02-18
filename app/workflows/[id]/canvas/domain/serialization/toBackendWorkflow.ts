@@ -6,6 +6,14 @@ import {
   resolveConnectionCondition,
 } from "./helpers";
 
+const GAME_TO_INDEX: Record<string, number> = {
+  "The Legend of Zelda: Breath of the Wild": 1,
+  "Elden Ring": 2,
+  "Hollow Knight": 3,
+  "Street Fighter 6": 4,
+  "Final Fantasy VII Rebirth": 5,
+};
+
 const HTTP_INDEX_URLS: Record<string, string> = {
   "The Legend of Zelda: Breath of the Wild":
     "https://jsonplaceholder.typicode.com/posts/1",
@@ -34,6 +42,19 @@ const resolveHttpUrlFromIndex = (indexValue?: string) => {
   if (!Number.isFinite(n)) return "";
   const key = legacyMap[n];
   return key ? (HTTP_INDEX_URLS[key] ?? "") : "";
+};
+
+const resolveHttpIndexNumber = (indexValue?: string) => {
+  if (!indexValue) return undefined;
+
+  if (indexValue in GAME_TO_INDEX) {
+    return GAME_TO_INDEX[indexValue];
+  }
+
+  const n = Number(indexValue);
+  if (!Number.isFinite(n)) return undefined;
+  if (n < 1 || n > 5) return undefined;
+  return n;
 };
 
 // Serializador puro para payload de backend.
@@ -66,9 +87,11 @@ export function toBackendWorkflow(workflow: Workflow): BackendWorkflowPayload {
     if (node.type === "HTTP_REQUEST") {
       const inputKey =
         node.config?.url || resolveHttpUrlFromIndex(node.config?.index);
+      const index = resolveHttpIndexNumber(node.config?.index);
       return {
         ...baseNode,
         inputKey,
+        index,
       };
     }
 
