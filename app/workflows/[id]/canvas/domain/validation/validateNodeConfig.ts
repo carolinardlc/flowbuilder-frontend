@@ -19,7 +19,7 @@ export function validateNodeConfig(node: Node): ValidationError[] {
   }
 
   if (node.type === "HTTP_REQUEST") {
-    if (!isNotEmpty(node.config?.method) || !isNotEmpty(node.config?.url)) {
+    if (!isNotEmpty(node.config?.method) || !isNotEmpty(node.config?.index)) {
       return [
         {
           code: "NODE_CONFIG_INVALID",
@@ -45,7 +45,10 @@ export function validateNodeConfig(node: Node): ValidationError[] {
   }
 
   if (node.type === "END") {
-    if (!isNotEmpty(node.config?.outputType) || !isNotEmpty(node.config?.message)) {
+    if (
+      !isNotEmpty(node.config?.outputType) ||
+      !isNotEmpty(node.config?.message)
+    ) {
       return [
         {
           code: "NODE_CONFIG_INVALID",

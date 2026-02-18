@@ -18,14 +18,23 @@ const httpNodeConfig: NodeConfigStrategy = {
       </div>
 
       <div className="form-group">
-        <label className="form-label">URL</label>
-        <input
-          type="url"
-          className="form-input"
-          value={config.config.url ?? ""}
-          onChange={(e) => updateNestedConfig("url", e.target.value)}
-          placeholder="https://api.example.com/data"
-        />
+        <label className="form-label">Index</label>
+        <select
+          className="form-select"
+          value={config.config.index ?? ""}
+          onChange={(e) => updateNestedConfig("index", e.target.value)}
+        >
+          <option value="">Selecciona un juego</option>
+          <option value="The Legend of Zelda: Breath of the Wild">
+            The Legend of Zelda: Breath of the Wild
+          </option>
+          <option value="Elden Ring">Elden Ring</option>
+          <option value="Hollow Knight">Hollow Knight</option>
+          <option value="Street Fighter 6">Street Fighter 6</option>
+          <option value="Final Fantasy VII Rebirth">
+            Final Fantasy VII Rebirth
+          </option>
+        </select>
       </div>
 
       {config.config.method !== "POST" && (
@@ -59,7 +68,9 @@ const httpNodeConfig: NodeConfigStrategy = {
             <select
               className="form-select"
               value={config.config.errorPolicy ?? "STOP"}
-              onChange={(e) => updateNestedConfig("errorPolicy", e.target.value)}
+              onChange={(e) =>
+                updateNestedConfig("errorPolicy", e.target.value)
+              }
             >
               <option value="STOP">STOP</option>
               <option value="CONTINUE">CONTINUE</option>
@@ -71,8 +82,8 @@ const httpNodeConfig: NodeConfigStrategy = {
   ),
   validateConfig: (raw) => {
     const errors = [];
-    if ((raw.url ?? "").trim().length === 0) {
-      errors.push({ field: "url", message: "La URL es obligatoria." });
+    if ((raw.index ?? "").trim().length === 0) {
+      errors.push({ field: "index", message: "El index es obligatorio." });
     }
     if (!raw.method) {
       errors.push({ field: "method", message: "El método es obligatorio." });
@@ -85,7 +96,7 @@ const httpNodeConfig: NodeConfigStrategy = {
     return {
       ...raw,
       method: raw.method ?? "GET",
-      url: raw.url ?? "",
+      index: raw.index ?? "",
       timeoutMs: raw.timeoutMs ?? "",
       retries: raw.retries ?? "",
       errorPolicy: normalizedErrorPolicy ?? "STOP",

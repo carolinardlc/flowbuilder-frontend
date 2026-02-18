@@ -24,6 +24,7 @@ export interface WorkflowNodeData {
   config?: {
     method?: "GET" | "POST";
     url?: string;
+    index?: string;
     timeoutMs?: string;
     retries?: string;
     errorPolicy?: HttpErrorPolicy;
@@ -76,6 +77,7 @@ export interface NodeConfig {
   config: {
     method?: "GET" | "POST";
     url?: string;
+    index?: string;
     timeoutMs?: string;
     retries?: string;
     errorPolicy?: HttpErrorPolicy;

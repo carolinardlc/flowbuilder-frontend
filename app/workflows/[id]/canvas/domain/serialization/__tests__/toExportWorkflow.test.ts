@@ -13,7 +13,7 @@ test("toExportWorkflow serializa payload exportable", () => {
         title: "HTTP",
         config: {
           method: "GET",
-          url: "https://api.example.com",
+          index: "Elden Ring",
           timeoutMs: "3000",
           retries: "2",
           errorPolicy: "CONTINUE",
@@ -33,6 +33,7 @@ test("toExportWorkflow serializa payload exportable", () => {
   assert.equal(result.nodes.length, 3);
   const httpNode = result.nodes.find((node) => node.id === "n2");
   assert.equal(httpNode?.type, "HTTP");
+  assert.equal((httpNode as any)?.index, 2);
   assert.equal(result.connections.length, 2);
 });
 

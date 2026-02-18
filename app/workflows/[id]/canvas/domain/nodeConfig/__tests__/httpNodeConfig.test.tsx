@@ -4,15 +4,15 @@ import { isValidElement } from "react";
 import httpNodeConfig from "../httpNodeConfig";
 import { baseConfig } from "./fixtures";
 
-test("httpNodeConfig valida url y metodo", () => {
-  const errors = httpNodeConfig.validateConfig({ method: "GET", url: "" });
+test("httpNodeConfig valida index y metodo", () => {
+  const errors = httpNodeConfig.validateConfig({ method: "GET", index: "" });
   assert.equal(errors.length > 0, true);
 });
 
 test("httpNodeConfig normaliza defaults", () => {
   const normalized = httpNodeConfig.normalizeConfig({});
   assert.equal(normalized.method, "GET");
-  assert.equal(normalized.url, "");
+  assert.equal(normalized.index, "");
   assert.equal(normalized.errorPolicy, "STOP");
 });
 
