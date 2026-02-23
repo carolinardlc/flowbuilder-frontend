@@ -44,7 +44,6 @@ const getOrCreateNestedObject = (
   record[key] = next;
   return next;
 };
-
 const setNestedConfigValue = (
   currentConfig: NodeConfig["config"],
   path: string,

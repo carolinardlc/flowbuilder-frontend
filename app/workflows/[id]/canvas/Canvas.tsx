@@ -62,7 +62,6 @@ const enqueueUnvisitedParents = (
     if (!visited.has(parentId)) stack.push(parentId);
   });
 };
-
 const collectAncestorNodeIds = (
   nodeId: string,
   incomingByTo: Map<string, string[]>,
