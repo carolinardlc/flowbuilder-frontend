@@ -24,7 +24,6 @@ type WorkflowsContextValue = {
   upsertWorkflow: (workflow: Workflow) => void;
   updateWorkflow: (workflow: Workflow) => void;
   deleteWorkflow: (id: string) => void;
-  importWorkflows: (workflows: Workflow[]) => void;
 };
 
 const WorkflowsContext = createContext<WorkflowsContextValue | undefined>(
@@ -102,8 +101,6 @@ export function WorkflowsProvider({ children }: { children: ReactNode }) {
           removeWorkflowCanvasFromStorage(id);
           return prev.filter((item) => item.id !== id);
         }),
-      importWorkflows: (newWorkflows: Workflow[]) =>
-        setWorkflows(newWorkflows),
     }),
     [workflows]
   );

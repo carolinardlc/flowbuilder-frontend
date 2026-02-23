@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react"; // 1. Importamos useState
 import { useWorkflows } from "../context/WorkflowsContext";
+import { formatDateEs } from "../utils/formatDate";
 import {
   convertWorkflowToCanvasSnapshot,
   parseWorkflowImportJson,
@@ -67,11 +68,7 @@ const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
         localStorage.removeItem(storageKey);
         localStorage.setItem(storageKey, JSON.stringify(snapshot));
 
-        const formattedDate = new Date().toLocaleDateString("es-ES", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        });
+        const formattedDate = formatDateEs();
 
         upsertWorkflow({
           id: parsed.workflow.id,

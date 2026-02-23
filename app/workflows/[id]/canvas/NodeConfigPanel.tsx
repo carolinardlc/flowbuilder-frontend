@@ -13,6 +13,46 @@ type NodeConfigPanelProps = {
   incomingNodeOptions?: { id: string; name: string; type: string }[];
 };
 
+const buildNodeConfigState = (node: WorkflowNodeData | null): NodeConfig => {
+  if (!node) {
+    return {
+      id: "",
+      title: "",
+      type: "COMMAND",
+      config: {},
+    };
+  }
+
+  return {
+    id: node.id,
+    title: node.title,
+    type: node.type,
+    config: nodeConfigStrategies[node.type].normalizeConfig(node.config || {}),
+  };
+};
+
+const setNestedConfigValue = (
+  currentConfig: NodeConfig["config"],
+  path: string,
+  value: string,
+) => {
+  const keys = path.split(".");
+  const nextConfig = { ...(currentConfig ?? {}) } as Record<string, unknown>;
+  let current: Record<string, unknown> = nextConfig;
+
+  for (let i = 0; i < keys.length - 1; i++) {
+    const key = keys[i];
+    current[key] =
+      typeof current[key] === "object" && current[key] !== null
+        ? current[key]
+        : {};
+    current = current[key] as Record<string, unknown>;
+  }
+
+  current[keys[keys.length - 1]] = value;
+  return nextConfig;
+};
+
 /**
  * Panel de configuración para nodos de workflow
  *
@@ -27,23 +67,13 @@ export default function NodeConfigPanel({
   incomingNodeOptions,
 }: NodeConfigPanelProps) {
   const strategy = node ? nodeConfigStrategies[node.type] : null;
-  const [config, setConfig] = useState<NodeConfig>(() => ({
-    id: node?.id || "",
-    title: node?.title || "",
-    type: node?.type || "COMMAND",
-    config: node ? nodeConfigStrategies[node.type].normalizeConfig(node.config || {}) : {},
-  }));
+  const [config, setConfig] = useState<NodeConfig>(() => buildNodeConfigState(node));
   const [formErrors, setFormErrors] = useState<string[]>([]);
 
   // Resetear config cuando cambia el nodo
   useEffect(() => {
     if (node) {
-      const newConfig: NodeConfig = {
-        id: node.id,
-        title: node.title,
-        type: node.type,
-        config: nodeConfigStrategies[node.type].normalizeConfig(node.config || {}),
-      };
+      const newConfig = buildNodeConfigState(node);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setConfig(newConfig);
       setFormErrors([]);
@@ -77,27 +107,9 @@ export default function NodeConfigPanel({
 
   const updateNestedConfig = useCallback((path: string, value: string) => {
     setConfig((prev) => {
-      const keys = path.split(".");
-      const nextConfig = { ...(prev.config ?? {}) } as Record<string, unknown>;
-
-      let current: Record<string, unknown> = nextConfig;
-
-      for (let i = 0; i < keys.length - 1; i++) {
-        const key = keys[i];
-        const existing = current[key];
-
-        if (typeof existing !== "object" || existing === null) {
-          current[key] = {};
-        }
-
-        current = current[key] as Record<string, unknown>;
-      }
-
-      current[keys[keys.length - 1]] = value;
-
       return {
         ...prev,
-        config: nextConfig,
+        config: setNestedConfigValue(prev.config, path, value),
       };
     });
   }, []);

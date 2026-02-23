@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import Layout from "../../components/Layout";
 import { useWorkflows } from "../../context/WorkflowsContext";
+import { formatDateEs } from "../../utils/formatDate";
 
 type FormState = {
   name: string;
@@ -22,11 +23,7 @@ export default function NewWorkflowPage() {
   const isFormValid = isNameValid && isDescriptionValid;
 
   const formattedDate = useMemo(() => {
-    return new Date().toLocaleDateString("es-ES", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    return formatDateEs();
   }, []);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {

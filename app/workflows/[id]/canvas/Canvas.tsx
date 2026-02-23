@@ -21,6 +21,98 @@ import { validateWorkflow } from "./domain/validation";
 import { postWorkflow } from "./services/workflowApi";
 import { downloadWorkflowJson } from "./services/workflowFile";
 
+type ValidationDialogState = {
+  status: "idle" | "ok" | "error";
+  messages: string[];
+};
+
+type SendDialogState = {
+  status: "idle" | "ok" | "error";
+  message: string;
+};
+
+type IncomingNodeOption = { id: string; name: string; type: string };
+
+const buildIncomingConnectionsIndex = (connections: Connection[]) => {
+  const incomingByTo = new Map<string, string[]>();
+  connections.forEach((connection) => {
+    const list = incomingByTo.get(connection.to) ?? [];
+    list.push(connection.from);
+    incomingByTo.set(connection.to, list);
+  });
+  return incomingByTo;
+};
+
+const collectAncestorNodeIds = (
+  nodeId: string,
+  incomingByTo: Map<string, string[]>,
+) => {
+  const visited = new Set<string>();
+  const resultIds: string[] = [];
+  const stack: string[] = [...(incomingByTo.get(nodeId) ?? [])];
+
+  while (stack.length > 0) {
+    const currentId = stack.pop();
+    if (!currentId || visited.has(currentId)) continue;
+
+    visited.add(currentId);
+    resultIds.push(currentId);
+
+    const parents = incomingByTo.get(currentId) ?? [];
+    parents.forEach((parentId) => {
+      if (!visited.has(parentId)) stack.push(parentId);
+    });
+  }
+
+  return resultIds;
+};
+
+const mapNodesToIncomingOptions = (
+  nodeIds: string[],
+  nodes: WorkflowNodeData[],
+): IncomingNodeOption[] => {
+  return nodeIds
+    .map((id) => nodes.find((n) => n.id === id))
+    .filter((n): n is NonNullable<typeof n> => !!n)
+    .filter((n) => n.type !== "START")
+    .map((n) => ({ id: n.id, name: n.title, type: n.type }));
+};
+
+const buildWorkflowModel = ({
+  workflowId,
+  workflowName,
+  nodes,
+  connections,
+}: {
+  workflowId: string;
+  workflowName: string | null;
+  nodes: WorkflowNodeData[];
+  connections: Connection[];
+}): WorkflowSerializationModel => ({
+  id: workflowId,
+  name: workflowName ?? `Workflow ${workflowId}`,
+  nodes,
+  connections,
+});
+
+const getWorkflowValidationMessages = (
+  nodes: WorkflowNodeData[],
+  connections: Connection[],
+) => {
+  return validateWorkflow({ nodes, connections }).map((error) => error.message);
+};
+
+const getIncomingNodeOptions = (
+  selectedNode: WorkflowNodeData | null,
+  nodes: WorkflowNodeData[],
+  connections: Connection[],
+): IncomingNodeOption[] => {
+  if (!selectedNode || selectedNode.type !== "CONDITIONAL") return [];
+  const incomingByTo = buildIncomingConnectionsIndex(connections);
+  const ancestorNodeIds = collectAncestorNodeIds(selectedNode.id, incomingByTo);
+  return mapNodesToIncomingOptions(ancestorNodeIds, nodes);
+};
+
 /**
  * Componente principal del Canvas de Workflow
  *
@@ -154,54 +246,24 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
   const [selectedConnectionId, setSelectedConnectionId] = useState<
     string | null
   >(null);
-  const [validationResult, setValidationResult] = useState<{
-    status: "idle" | "ok" | "error";
-    messages: string[];
-  }>({ status: "idle", messages: [] });
+  const [validationResult, setValidationResult] =
+    useState<ValidationDialogState>({ status: "idle", messages: [] });
   const [isValidationOpen, setIsValidationOpen] = useState(false);
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionKey, setExecutionKey] = useState(0);
-  const [sendResult, setSendResult] = useState<{
-    status: "idle" | "ok" | "error";
-    message: string;
-  }>({ status: "idle", message: "" });
+  const [sendResult, setSendResult] = useState<SendDialogState>({
+    status: "idle",
+    message: "",
+  });
   const [isSendOpen, setIsSendOpen] = useState(false);
   const [backendTerminalOutput, setBackendTerminalOutput] =
     useState<string>("");
 
-  const incomingNodeOptions = (() => {
-    if (!selectedNode || selectedNode.type !== "CONDITIONAL") return [];
-
-    const incomingByTo = new Map<string, string[]>();
-    connections.forEach((c) => {
-      const list = incomingByTo.get(c.to) ?? [];
-      list.push(c.from);
-      incomingByTo.set(c.to, list);
-    });
-
-    const visited = new Set<string>();
-    const resultIds: string[] = [];
-    const stack: string[] = [...(incomingByTo.get(selectedNode.id) ?? [])];
-
-    while (stack.length > 0) {
-      const currentId = stack.pop();
-      if (!currentId) continue;
-      if (visited.has(currentId)) continue;
-      visited.add(currentId);
-      resultIds.push(currentId);
-
-      const parents = incomingByTo.get(currentId) ?? [];
-      parents.forEach((p) => {
-        if (!visited.has(p)) stack.push(p);
-      });
-    }
-
-    return resultIds
-      .map((id) => nodes.find((n) => n.id === id))
-      .filter((n): n is NonNullable<typeof n> => !!n)
-      .filter((n) => n.type !== "START")
-      .map((n) => ({ id: n.id, name: n.title, type: n.type }));
-  })();
+  const incomingNodeOptions = getIncomingNodeOptions(
+    selectedNode,
+    nodes,
+    connections,
+  );
 
   // Manejo de eliminación de nodo
   const handleDeleteNodeComplete = (nodeId: string) => {
@@ -229,12 +291,12 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
 
   const handleDownloadJson = () => {
     // Refactor: serialización y descarga delegadas a dominio + servicio.
-    const workflowModel: WorkflowSerializationModel = {
-      id: workflowId,
-      name: workflowName ?? `Workflow ${workflowId}`,
+    const workflowModel = buildWorkflowModel({
+      workflowId,
+      workflowName,
       nodes,
       connections,
-    };
+    });
     const payload = toExportWorkflow(workflowModel);
     downloadWorkflowJson(payload, workflowModel.name);
   };
@@ -242,12 +304,12 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
   const handleSendToBackend = async () => {
     try {
       // Refactor: mapeo backend y llamada de red aislados de la UI.
-      const workflowModel: WorkflowSerializationModel = {
-        id: workflowId,
-        name: workflowName ?? `Workflow ${workflowId}`,
+      const workflowModel = buildWorkflowModel({
+        workflowId,
+        workflowName,
         nodes,
         connections,
-      };
+      });
       const payload = toExportWorkflow(workflowModel);
       const result = await postWorkflow(payload);
 
@@ -274,9 +336,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
   };
 
   const runWorkflowValidation = () => {
-    const errors = validateWorkflow({ nodes, connections }).map(
-      (error) => error.message,
-    );
+    const errors = getWorkflowValidationMessages(nodes, connections);
     if (errors.length === 0) {
       setValidationResult({
         status: "ok",
@@ -289,9 +349,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
   };
 
   const handleExecuteWorkflow = () => {
-    const errors = validateWorkflow({ nodes, connections }).map(
-      (error) => error.message,
-    );
+    const errors = getWorkflowValidationMessages(nodes, connections);
     if (errors.length > 0) {
       setValidationResult({ status: "error", messages: errors });
       setIsValidationOpen(true);
