@@ -147,14 +147,108 @@ const buildLevels = (nodes: ExportNode[], connections: ExportWorkflow["connectio
   return levels;
 };
 
-export const parseWorkflowImportJson = (rawJson: string): ParseWorkflowImportResult => {
-  let data: unknown;
-  try {
-    data = JSON.parse(rawJson.replace(/^\uFEFF/, ""));
-  } catch {
-    return { ok: false, error: "JSON invalido." };
-  }
+const resolveCanvasPosition = (
+  positions: Map<string, { x: number; y: number }>,
+  nodeId: string,
+  fallbackIndex: number,
+) => {
+  return (
+    positions.get(nodeId) ?? {
+      x: 120 + fallbackIndex * 220,
+      y: 140,
+    }
+  );
+};
 
+const toCanvasHttpNode = (
+  node: Extract<ExportNode, { type: "HTTP" }>,
+  position: { x: number; y: number },
+): WorkflowNodeData => {
+  return {
+    id: node.id,
+    title: node.name,
+    type: "HTTP_REQUEST",
+    x: position.x,
+    y: position.y,
+    config: {
+      method: node.method,
+      url: node.url ?? "",
+      timeoutMs: typeof node.timeout === "number" ? String(node.timeout) : undefined,
+      retries: typeof node.attempts === "number" ? String(node.attempts) : undefined,
+      errorPolicy: node.politica === "CONTINUE" ? "CONTINUE" : "STOP",
+    },
+  };
+};
+
+const toCanvasCommandNode = (
+  node: Extract<ExportNode, { type: "COMMAND" }>,
+  position: { x: number; y: number },
+): WorkflowNodeData => ({
+  id: node.id,
+  title: node.name,
+  type: "COMMAND",
+  x: position.x,
+  y: position.y,
+  config: { command: node.command },
+});
+
+const toCanvasConditionalNode = (
+  node: Extract<ExportNode, { type: "CONDITIONAL" }>,
+  position: { x: number; y: number },
+): WorkflowNodeData => ({
+  id: node.id,
+  title: node.name,
+  type: "CONDITIONAL",
+  x: position.x,
+  y: position.y,
+  config: { sourceNodeId: node.target },
+});
+
+const toCanvasEndNode = (
+  node: Extract<ExportNode, { type: "END" }>,
+  position: { x: number; y: number },
+): WorkflowNodeData => ({
+  id: node.id,
+  title: node.name,
+  type: "END",
+  x: position.x,
+  y: position.y,
+  config: {
+    outputType:
+      node.outputType === "success" ||
+      node.outputType === "error" ||
+      node.outputType === "notification"
+        ? node.outputType
+        : undefined,
+    message: node.message,
+  },
+});
+
+const toCanvasStartNode = (
+  node: Extract<ExportNode, { type: "START" }>,
+  position: { x: number; y: number },
+): WorkflowNodeData => ({
+  id: node.id,
+  title: node.name,
+  type: "START",
+  x: position.x,
+  y: position.y,
+});
+
+const toCanvasNode = (
+  node: ExportNode,
+  position: { x: number; y: number },
+): WorkflowNodeData => {
+  if (node.type === "HTTP") return toCanvasHttpNode(node, position);
+  if (node.type === "COMMAND") return toCanvasCommandNode(node, position);
+  if (node.type === "CONDITIONAL") return toCanvasConditionalNode(node, position);
+  if (node.type === "END") return toCanvasEndNode(node, position);
+  return toCanvasStartNode(node, position);
+};
+
+export const parseWorkflowImportData = (
+  data: unknown,
+): ParseWorkflowImportResult => {
   if (!isRecord(data)) {
     return { ok: false, error: "El archivo debe ser un objeto JSON." };
   }
@@ -237,6 +331,19 @@ export const parseWorkflowImportJson = (rawJson: string): ParseWorkflowImportRes
   };
 };
 
+export const parseWorkflowImportJson = (
+  rawJson: string,
+): ParseWorkflowImportResult => {
+  let data: unknown;
+  try {
+    data = JSON.parse(rawJson.replace(/^\uFEFF/, ""));
+  } catch {
+    return { ok: false, error: "JSON invalido." };
+  }
+
+  return parseWorkflowImportData(data);
+};
+
 export const convertWorkflowToCanvasSnapshot = (workflow: ExportWorkflow) => {
   const levels = buildLevels(workflow.nodes, workflow.connections);
   const groups = new Map<number, ExportNode[]>();
@@ -260,80 +367,9 @@ export const convertWorkflowToCanvasSnapshot = (workflow: ExportWorkflow) => {
       });
     });
 
-  const canvasNodes: WorkflowNodeData[] = workflow.nodes.map((node, index) => {
-    const position = positions.get(node.id) ?? {
-      x: 120 + index * 220,
-      y: 140,
-    };
-
-    if (node.type === "HTTP") {
-      return {
-        id: node.id,
-        title: node.name,
-        type: "HTTP_REQUEST",
-        x: position.x,
-        y: position.y,
-        config: {
-          method: node.method,
-          url: node.url,
-          timeoutMs:
-            typeof node.timeout === "number" ? String(node.timeout) : undefined,
-          retries:
-            typeof node.attempts === "number" ? String(node.attempts) : undefined,
-          errorPolicy: node.politica === "CONTINUE" ? "CONTINUE" : "STOP",
-        },
-      };
-    }
-
-    if (node.type === "COMMAND") {
-      return {
-        id: node.id,
-        title: node.name,
-        type: "COMMAND",
-        x: position.x,
-        y: position.y,
-        config: { command: node.command },
-      };
-    }
-
-    if (node.type === "CONDITIONAL") {
-      return {
-        id: node.id,
-        title: node.name,
-        type: "CONDITIONAL",
-        x: position.x,
-        y: position.y,
-        config: { sourceNodeId: node.target },
-      };
-    }
-
-    if (node.type === "END") {
-      return {
-        id: node.id,
-        title: node.name,
-        type: "END",
-        x: position.x,
-        y: position.y,
-        config: {
-          outputType:
-            node.outputType === "success" ||
-            node.outputType === "error" ||
-            node.outputType === "notification"
-              ? node.outputType
-              : undefined,
-          message: node.message,
-        },
-      };
-    }
-
-    return {
-      id: node.id,
-      title: node.name,
-      type: "START",
-      x: position.x,
-      y: position.y,
-    };
-  });
+  const canvasNodes: WorkflowNodeData[] = workflow.nodes.map((node, index) =>
+    toCanvasNode(node, resolveCanvasPosition(positions, node.id, index)),
+  );
 
   const nodeById = new Map(canvasNodes.map((node) => [node.id, node]));
   const canvasConnections: Connection[] = workflow.connections

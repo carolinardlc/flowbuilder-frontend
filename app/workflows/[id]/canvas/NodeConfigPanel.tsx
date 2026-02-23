@@ -31,6 +31,20 @@ const buildNodeConfigState = (node: WorkflowNodeData | null): NodeConfig => {
   };
 };
 
+const getOrCreateNestedObject = (
+  record: Record<string, unknown>,
+  key: string,
+): Record<string, unknown> => {
+  const existing = record[key];
+  if (typeof existing === "object" && existing !== null) {
+    return existing as Record<string, unknown>;
+  }
+
+  const next = {};
+  record[key] = next;
+  return next;
+};
+
 const setNestedConfigValue = (
   currentConfig: NodeConfig["config"],
   path: string,
@@ -41,12 +55,7 @@ const setNestedConfigValue = (
   let current: Record<string, unknown> = nextConfig;
 
   for (let i = 0; i < keys.length - 1; i++) {
-    const key = keys[i];
-    current[key] =
-      typeof current[key] === "object" && current[key] !== null
-        ? current[key]
-        : {};
-    current = current[key] as Record<string, unknown>;
+    current = getOrCreateNestedObject(current, keys[i]);
   }
 
   current[keys[keys.length - 1]] = value;

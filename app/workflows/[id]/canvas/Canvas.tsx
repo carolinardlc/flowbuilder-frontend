@@ -43,6 +43,25 @@ const buildIncomingConnectionsIndex = (connections: Connection[]) => {
   return incomingByTo;
 };
 
+const canVisitAncestor = (
+  nodeId: string | undefined,
+  visited: Set<string>,
+): nodeId is string => {
+  return !!nodeId && !visited.has(nodeId);
+};
+
+const enqueueUnvisitedParents = (
+  nodeId: string,
+  incomingByTo: Map<string, string[]>,
+  visited: Set<string>,
+  stack: string[],
+) => {
+  const parents = incomingByTo.get(nodeId) ?? [];
+  parents.forEach((parentId) => {
+    if (!visited.has(parentId)) stack.push(parentId);
+  });
+};
+
 const collectAncestorNodeIds = (
   nodeId: string,
   incomingByTo: Map<string, string[]>,
@@ -53,15 +72,11 @@ const collectAncestorNodeIds = (
 
   while (stack.length > 0) {
     const currentId = stack.pop();
-    if (!currentId || visited.has(currentId)) continue;
+    if (!canVisitAncestor(currentId, visited)) continue;
 
     visited.add(currentId);
     resultIds.push(currentId);
-
-    const parents = incomingByTo.get(currentId) ?? [];
-    parents.forEach((parentId) => {
-      if (!visited.has(parentId)) stack.push(parentId);
-    });
+    enqueueUnvisitedParents(currentId, incomingByTo, visited, stack);
   }
 
   return resultIds;

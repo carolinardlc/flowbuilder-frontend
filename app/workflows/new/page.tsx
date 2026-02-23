@@ -1,22 +1,26 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import Layout from "../../components/Layout";
 import { useWorkflows } from "../../context/WorkflowsContext";
 import { formatDateEs } from "../../utils/formatDate";
-
-type FormState = {
-  name: string;
-  description: string;
-};
+import WorkflowForm, {
+  type WorkflowFormTouched,
+  type WorkflowFormValues,
+} from "../_components/WorkflowForm";
 
 export default function NewWorkflowPage() {
   const router = useRouter();
   const { addWorkflow } = useWorkflows();
-  const [form, setForm] = useState<FormState>({ name: "", description: "" });
-  const [touched, setTouched] = useState({ name: false, description: false });
+  const [form, setForm] = useState<WorkflowFormValues>({
+    name: "",
+    description: "",
+  });
+  const [touched, setTouched] = useState<WorkflowFormTouched>({
+    name: false,
+    description: false,
+  });
 
   const isNameValid = form.name.trim().length > 0;
   const isDescriptionValid = form.description.trim().length > 0;
@@ -51,63 +55,25 @@ export default function NewWorkflowPage() {
           <p className="hero-kicker">Nuevo flujo</p>
           <h1 className="workflows-title">Crear workflow</h1>
           <p className="workflows-subtitle">
-            Define el nombre y la descripción de tu flujo.
+            Define el nombre y la descripcion de tu flujo.
           </p>
         </div>
 
-        <form className="app-card form-card" onSubmit={handleSubmit}>
-          <div className="form-field">
-            <label className="form-label" htmlFor="workflow-name">
-              Nombre del workflow
-            </label>
-            <input
-              id="workflow-name"
-              name="name"
-              className="form-input"
-              placeholder="Ej: Onboarding de clientes"
-              value={form.name}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, name: event.target.value }))
-              }
-              onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
-            />
-            {!isNameValid && touched.name ? (
-              <p className="form-error">El nombre es obligatorio.</p>
-            ) : null}
-          </div>
-
-          <div className="form-field">
-            <label className="form-label" htmlFor="workflow-description">
-              Descripción
-            </label>
-            <textarea
-              id="workflow-description"
-              name="description"
-              className="form-textarea"
-              placeholder="Describe el objetivo y los pasos clave."
-              rows={4}
-              value={form.description}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, description: event.target.value }))
-              }
-              onBlur={() =>
-                setTouched((prev) => ({ ...prev, description: true }))
-              }
-            />
-            {!isDescriptionValid && touched.description ? (
-              <p className="form-error">La descripción es obligatoria.</p>
-            ) : null}
-          </div>
-
-          <div className="form-actions">
-            <button className="btn-primary" type="submit" disabled={!isFormValid}>
-              Crear workflow
-            </button>
-            <Link href="/workflows" className="btn-secondary link-button">
-              Cancelar
-            </Link>
-          </div>
-        </form>
+        <WorkflowForm
+          form={form}
+          touched={touched}
+          isNameValid={isNameValid}
+          isDescriptionValid={isDescriptionValid}
+          isFormValid={isFormValid}
+          submitLabel="Crear workflow"
+          onSubmit={handleSubmit}
+          onFieldChange={(field, value) =>
+            setForm((prev) => ({ ...prev, [field]: value }))
+          }
+          onFieldBlur={(field) =>
+            setTouched((prev) => ({ ...prev, [field]: true }))
+          }
+        />
       </section>
     </Layout>
   );

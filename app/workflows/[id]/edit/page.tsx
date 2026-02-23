@@ -6,11 +6,10 @@ import { useEffect, useMemo, useState } from "react";
 import Layout from "../../../components/Layout";
 import { useWorkflows } from "../../../context/WorkflowsContext";
 import { formatDateEs } from "../../../utils/formatDate";
-
-type FormState = {
-  name: string;
-  description: string;
-};
+import WorkflowForm, {
+  type WorkflowFormTouched,
+  type WorkflowFormValues,
+} from "../../_components/WorkflowForm";
 
 export default function EditWorkflowPage() {
   const params = useParams<{ id: string }>();
@@ -19,8 +18,14 @@ export default function EditWorkflowPage() {
   const { workflows, updateWorkflow, deleteWorkflow } = useWorkflows();
   const workflow = workflows.find((item) => item.id === workflowId);
 
-  const [form, setForm] = useState<FormState>({ name: "", description: "" });
-  const [touched, setTouched] = useState({ name: false, description: false });
+  const [form, setForm] = useState<WorkflowFormValues>({
+    name: "",
+    description: "",
+  });
+  const [touched, setTouched] = useState<WorkflowFormTouched>({
+    name: false,
+    description: false,
+  });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
@@ -61,7 +66,7 @@ export default function EditWorkflowPage() {
           <p className="hero-kicker">Editar flujo</p>
           <h1 className="workflows-title">Editar workflow</h1>
           <p className="workflows-subtitle">
-            Actualiza el nombre y la descripción de tu flujo.
+            Actualiza el nombre y la descripcion de tu flujo.
           </p>
         </div>
 
@@ -78,66 +83,22 @@ export default function EditWorkflowPage() {
             </div>
           </div>
         ) : (
-          <form className="app-card form-card" onSubmit={handleSubmit}>
-            <div className="form-field">
-              <label className="form-label" htmlFor="workflow-name">
-                Nombre del workflow
-              </label>
-              <input
-                id="workflow-name"
-                name="name"
-                className="form-input"
-                placeholder="Ej: Onboarding de clientes"
-                value={form.name}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, name: event.target.value }))
-                }
-                onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
-              />
-              {!isNameValid && touched.name ? (
-                <p className="form-error">El nombre es obligatorio.</p>
-              ) : null}
-            </div>
-
-            <div className="form-field">
-              <label className="form-label" htmlFor="workflow-description">
-                Descripción
-              </label>
-              <textarea
-                id="workflow-description"
-                name="description"
-                className="form-textarea"
-                placeholder="Describe el objetivo y los pasos clave."
-                rows={4}
-                value={form.description}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, description: event.target.value }))
-                }
-                onBlur={() =>
-                  setTouched((prev) => ({ ...prev, description: true }))
-                }
-              />
-              {!isDescriptionValid && touched.description ? (
-                <p className="form-error">La descripción es obligatoria.</p>
-              ) : null}
-            </div>
-
-            <div className="form-actions">
-              <button className="btn-primary" type="submit" disabled={!isFormValid}>
-                Guardar cambios
-              </button>
-              <Link href="/workflows" className="btn-secondary link-button">
-                Cancelar
-              </Link>
-              <button
-                type="button"
-                className="btn-secondary btn-danger"
-                onClick={() => setShowDeleteModal(true)}
-              >
-                Eliminar
-              </button>
-            </div>
-          </form>
+          <WorkflowForm
+            form={form}
+            touched={touched}
+            isNameValid={isNameValid}
+            isDescriptionValid={isDescriptionValid}
+            isFormValid={isFormValid}
+            submitLabel="Guardar cambios"
+            onSubmit={handleSubmit}
+            onFieldChange={(field, value) =>
+              setForm((prev) => ({ ...prev, [field]: value }))
+            }
+            onFieldBlur={(field) =>
+              setTouched((prev) => ({ ...prev, [field]: true }))
+            }
+            onDelete={() => setShowDeleteModal(true)}
+          />
         )}
 
         {workflow && showDeleteModal ? (
@@ -145,8 +106,8 @@ export default function EditWorkflowPage() {
             <div className="modal-card">
               <h2 className="workflows-title">Eliminar workflow</h2>
               <p className="workflows-subtitle">
-                ¿Estás seguro de que deseas eliminar “{workflow.name}”? Esta acción
-                no se puede deshacer.
+                Estas seguro de que deseas eliminar "{workflow.name}"? Esta
+                accion no se puede deshacer.
               </p>
               <div className="form-actions">
                 <button

@@ -35,6 +35,7 @@ export type ExportHttpNode = {
   id: string;
   name: string;
   type: "HTTP";
+  url?: string;
   method: "GET" | "POST";
   politica?: "STOP" | "CONTINUE";
   timeout?: number;

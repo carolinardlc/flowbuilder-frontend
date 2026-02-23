@@ -1,5 +1,3 @@
-import { WorkflowNodeData, Connection } from "../types";
-
 // Interfaz flexible para leer la estructura
 interface ImportData {
   workflow?: ImportData; // Para detectar si está anidado
