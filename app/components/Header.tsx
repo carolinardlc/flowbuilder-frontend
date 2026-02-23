@@ -13,7 +13,7 @@ import Toast from "./Toast";
 const navItems = [
   { label: "Inicio", href: "/" },
   { label: "Workflows", href: "/workflows" },
-  { label: "Configuración", href: "/configuracion" },
+  { label: "Configuracion", href: "/configuracion" },
 ];
 
 type ToastState = {
@@ -96,7 +96,7 @@ export default function Header() {
       navigateToImportedWorkflow(result.route);
     } catch {
       setToast({
-        message: "Ocurrió un error inesperado al leer el archivo.",
+        message: "Ocurrio un error inesperado al leer el archivo.",
         type: "error",
       });
     } finally {
@@ -118,7 +118,7 @@ export default function Header() {
           </div>
           <nav className="nav">
             {navItems.map((item) => {
-              if (item.label === "Configuración") {
+              if (item.label === "Configuracion") {
                 return (
                   <button
                     key={item.label}
@@ -171,7 +171,7 @@ export default function Header() {
       {isConfigOpen && (
         <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="modal-card">
-            <h2 className="workflows-title">Configuración</h2>
+            <h2 className="workflows-title">Configuracion</h2>
             <div className="form-group" style={{ marginTop: "12px" }}>
               <label
                 className="form-label"
@@ -244,7 +244,7 @@ export default function Header() {
                   saveBackendConfig();
                   setIsConfigOpen(false);
                   setToast({
-                    message: "Configuración guardada.",
+                    message: "Configuracion guardada.",
                     type: "success",
                   });
                 }}
