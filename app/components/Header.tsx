@@ -13,7 +13,7 @@ import Toast from "./Toast";
 const navItems = [
   { label: "Inicio", href: "/" },
   { label: "Workflows", href: "/workflows" },
-  { label: "Contacto", href: "/contacto" },
+  { label: "Configuración", href: "/configuracion" },
 ];
 
 type ToastState = {
@@ -25,7 +25,42 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { upsertWorkflow } = useWorkflows();
+
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [isBackendEditEnabled, setIsBackendEditEnabled] = useState(false);
+  const [backendUrl, setBackendUrl] = useState("192.168.5.2");
+  const [backendPort, setBackendPort] = useState("3000");
+
+  const loadBackendConfig = () => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem("backend-config");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<{ url: string; port: string }>;
+      if (typeof parsed.url === "string" && parsed.url.trim()) {
+        setBackendUrl(parsed.url);
+      }
+      if (typeof parsed.port === "string" && parsed.port.trim()) {
+        setBackendPort(parsed.port);
+      }
+    } catch {
+      return;
+    }
+  };
+
+  const saveBackendConfig = () => {
+    if (typeof window === "undefined") return;
+    const url = backendUrl.trim() || "192.168.5.2";
+    const port = backendPort.trim() || "3000";
+    setBackendUrl(url);
+    setBackendPort(port);
+    try {
+      localStorage.setItem("backend-config", JSON.stringify({ url, port }));
+    } catch {
+      return;
+    }
+  };
 
   const navigateToImportedWorkflow = (workflowRoute: string) => {
     setTimeout(() => {
@@ -61,7 +96,7 @@ export default function Header() {
       navigateToImportedWorkflow(result.route);
     } catch {
       setToast({
-        message: "Ocurrio un error inesperado al leer el archivo.",
+        message: "Ocurrió un error inesperado al leer el archivo.",
         type: "error",
       });
     } finally {
@@ -82,15 +117,34 @@ export default function Header() {
             <span className="brand-pill">FlowBuilder</span>
           </div>
           <nav className="nav">
-            {navItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={`nav-link ${isActive(item.href) ? "nav-link-active" : ""}`}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              if (item.label === "Configuración") {
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    className="nav-link"
+                    onClick={() => {
+                      loadBackendConfig();
+                      setIsBackendEditEnabled(false);
+                      setIsConfigOpen(true);
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`nav-link ${isActive(item.href) ? "nav-link-active" : ""}`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
           <div>
             <label className="nav-link cursor-pointer">
@@ -112,6 +166,94 @@ export default function Header() {
           type={toast.type}
           onClose={() => setToast(null)}
         />
+      )}
+
+      {isConfigOpen && (
+        <div className="modal-overlay" role="dialog" aria-modal="true">
+          <div className="modal-card">
+            <h2 className="workflows-title">Configuración</h2>
+            <div className="form-group" style={{ marginTop: "12px" }}>
+              <label
+                className="form-label"
+                style={{ display: "flex", alignItems: "center", gap: "10px" }}
+              >
+                <span>Editar</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setIsBackendEditEnabled((prev) => {
+                      const next = !prev;
+                      if (!next) {
+                        setBackendUrl("192.168.5.2");
+                        setBackendPort("8080");
+                      }
+                      return next;
+                    })
+                  }
+                  aria-pressed={isBackendEditEnabled}
+                  className={`btn-secondary ${isBackendEditEnabled ? "" : ""}`}
+                  style={{
+                    padding: "6px 10px",
+                    fontSize: "12px",
+                    opacity: 1,
+                  }}
+                >
+                  {isBackendEditEnabled ? "ON" : "OFF"}
+                </button>
+              </label>
+            </div>
+            <div className="form-group" style={{ marginTop: "12px" }}>
+              <label className="form-label">IP</label>
+              <input
+                className="form-input"
+                value={backendUrl}
+                onChange={(e) => setBackendUrl(e.target.value)}
+                placeholder="192.168.5.2"
+                disabled={!isBackendEditEnabled}
+                style={{
+                  opacity: isBackendEditEnabled ? 1 : 0.55,
+                  cursor: isBackendEditEnabled ? "text" : "not-allowed",
+                }}
+              />
+            </div>
+            <div className="form-group" style={{ marginTop: "12px" }}>
+              <label className="form-label">PORT</label>
+              <input
+                className="form-input"
+                value={backendPort}
+                onChange={(e) => setBackendPort(e.target.value)}
+                placeholder="3000"
+                inputMode="numeric"
+                disabled={!isBackendEditEnabled}
+                style={{
+                  opacity: isBackendEditEnabled ? 1 : 0.55,
+                  cursor: isBackendEditEnabled ? "text" : "not-allowed",
+                }}
+              />
+            </div>
+            <div className="form-actions" style={{ marginTop: "16px" }}>
+              <button
+                className="btn-secondary"
+                onClick={() => setIsConfigOpen(false)}
+              >
+                Cerrar
+              </button>
+              <button
+                className="btn-primary"
+                onClick={() => {
+                  saveBackendConfig();
+                  setIsConfigOpen(false);
+                  setToast({
+                    message: "Configuración guardada.",
+                    type: "success",
+                  });
+                }}
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
