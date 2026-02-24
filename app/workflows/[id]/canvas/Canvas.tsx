@@ -249,7 +249,28 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
         connections,
       };
       const payload = toExportWorkflow(workflowModel);
-      const result = await postWorkflow(payload);
+      let endpoint: string | undefined = undefined;
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("backend-config");
+          if (raw) {
+            const parsed = JSON.parse(raw) as Partial<{
+              url: string;
+              port: string;
+            }>;
+            const url = typeof parsed.url === "string" ? parsed.url.trim() : "";
+            const port =
+              typeof parsed.port === "string" ? parsed.port.trim() : "";
+            if (url && port) {
+              endpoint = `http://${url}:${port}/api/workflows/run`;
+            }
+          }
+        } catch {
+          endpoint = undefined;
+        }
+      }
+
+      const result = await postWorkflow(payload, endpoint);
 
       if (!result.ok) {
         setBackendTerminalOutput(
