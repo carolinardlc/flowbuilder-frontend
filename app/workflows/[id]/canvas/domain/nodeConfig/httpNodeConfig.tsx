@@ -1,127 +1,190 @@
-import type { NodeConfigStrategy } from "./types";
+import type {
+  NodeConfigRenderContext,
+  NodeConfigStrategy,
+  NodeConfigValidationError,
+} from "./types";
+import type { HttpErrorPolicy, NodeConfig } from "../../types";
 
-const normalizeHttpErrorPolicy = (value: unknown) => {
-  return value === "STOP_ON_FAIL" ? "STOP" : (value ?? "STOP");
+const DEFAULT_HTTP_METHOD = "GET";
+const DEFAULT_HTTP_ERROR_POLICY = "STOP";
+const HTTP_METHOD_POST = "POST";
+
+const HTTP_INDEX_OPTIONS = [
+  "The Legend of Zelda: Breath of the Wild",
+  "Elden Ring",
+  "Hollow Knight",
+  "Street Fighter 6",
+  "Final Fantasy VII Rebirth",
+] as const;
+
+const normalizeHttpMethod = (value: unknown): "GET" | "POST" =>
+  value === HTTP_METHOD_POST ? HTTP_METHOD_POST : "GET";
+
+const normalizeHttpErrorPolicy = (value: unknown): HttpErrorPolicy => {
+  if (value === "CONTINUE") return "CONTINUE";
+  if (value === "STOP_ON_FAIL") return "STOP";
+  return "STOP";
 };
 
-const normalizeHttpString = (value: unknown, fallback = "") => {
-  return typeof value === "string" ? value : fallback;
+const normalizeHttpString = (value: unknown, fallback = ""): string =>
+  typeof value === "string" ? value : fallback;
+
+const normalizeStringRecord = (value: unknown): Record<string, string> => {
+  if (typeof value !== "object" || value === null) return {};
+  const result: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof entry === "string") {
+      result[key] = entry;
+    }
+  }
+  return result;
 };
 
-const normalizeHttpObject = (value: unknown) => {
-  return typeof value === "object" && value !== null ? value : {};
+const buildNormalizedHttpConfig = (raw: NodeConfig["config"]): NodeConfig["config"] => ({
+  ...raw,
+  method: normalizeHttpMethod(raw.method),
+  index: normalizeHttpString(raw.index),
+  timeoutMs: normalizeHttpString(raw.timeoutMs),
+  retries: normalizeHttpString(raw.retries),
+  errorPolicy: normalizeHttpErrorPolicy(raw.errorPolicy),
+  headers: normalizeStringRecord(raw.headers),
+  body: normalizeHttpString(raw.body),
+  httpOutput: normalizeHttpString(raw.httpOutput),
+  outputMapping: normalizeStringRecord(raw.outputMapping),
+});
+
+const renderMethodField = ({
+  config,
+  updateNestedConfig,
+}: NodeConfigRenderContext) => (
+  <div className="form-group">
+    <label className="form-label">Método</label>
+    <select
+      className="form-select"
+      value={config.config.method ?? DEFAULT_HTTP_METHOD}
+      onChange={(e) => updateNestedConfig("method", e.target.value)}
+    >
+      <option value="GET">GET</option>
+      <option value={HTTP_METHOD_POST}>POST</option>
+    </select>
+  </div>
+);
+
+const renderIndexField = ({
+  config,
+  updateNestedConfig,
+}: NodeConfigRenderContext) => (
+  <div className="form-group">
+    <label className="form-label">Index</label>
+    <select
+      className="form-select"
+      value={config.config.index ?? ""}
+      onChange={(e) => updateNestedConfig("index", e.target.value)}
+    >
+      <option value="">Selecciona un juego</option>
+      {HTTP_INDEX_OPTIONS.map((option) => (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      ))}
+    </select>
+  </div>
+);
+
+const renderHttpNumberField = ({
+  label,
+  field,
+  value,
+  placeholder,
+  updateNestedConfig,
+}: {
+  label: string;
+  field: "timeoutMs" | "retries";
+  value: string;
+  placeholder: string;
+  updateNestedConfig: NodeConfigRenderContext["updateNestedConfig"];
+}) => (
+  <div className="form-group">
+    <label className="form-label">{label}</label>
+    <input
+      type="number"
+      className="form-input"
+      value={value}
+      onChange={(e) => updateNestedConfig(field, e.target.value)}
+      placeholder={placeholder}
+      min={0}
+    />
+  </div>
+);
+
+const renderErrorPolicyField = ({
+  config,
+  updateNestedConfig,
+}: NodeConfigRenderContext) => (
+  <div className="form-group">
+    <label className="form-label">Política de error</label>
+    <select
+      className="form-select"
+      value={config.config.errorPolicy ?? DEFAULT_HTTP_ERROR_POLICY}
+      onChange={(e) => updateNestedConfig("errorPolicy", e.target.value)}
+    >
+      <option value="STOP">STOP</option>
+      <option value="CONTINUE">CONTINUE</option>
+    </select>
+  </div>
+);
+
+const renderNonPostFields = (context: NodeConfigRenderContext) => (
+  <>
+    {renderHttpNumberField({
+      label: "Timeout (ms)",
+      field: "timeoutMs",
+      value: context.config.config.timeoutMs ?? "",
+      placeholder: "5000",
+      updateNestedConfig: context.updateNestedConfig,
+    })}
+    {renderHttpNumberField({
+      label: "Reintentos",
+      field: "retries",
+      value: context.config.config.retries ?? "",
+      placeholder: "3",
+      updateNestedConfig: context.updateNestedConfig,
+    })}
+    {renderErrorPolicyField(context)}
+  </>
+);
+
+const renderConfigForm = (context: NodeConfigRenderContext) => {
+  const isPostMethod = context.config.config.method === HTTP_METHOD_POST;
+
+  return (
+    <div className="config-section">
+      <h4 className="config-section-title">Configuración de HTTP Request</h4>
+      {renderMethodField(context)}
+      {renderIndexField(context)}
+      {!isPostMethod && renderNonPostFields(context)}
+    </div>
+  );
 };
 
-const buildNormalizedHttpConfig = (
-  raw: Record<string, unknown>,
-): Record<string, unknown> => {
-  return {
-    ...raw,
-    method: normalizeHttpString(raw.method, "GET"),
-    index: normalizeHttpString(raw.index),
-    timeoutMs: normalizeHttpString(raw.timeoutMs),
-    retries: normalizeHttpString(raw.retries),
-    errorPolicy: normalizeHttpErrorPolicy(raw.errorPolicy),
-    headers: normalizeHttpObject(raw.headers),
-    body: normalizeHttpString(raw.body),
-    httpOutput: normalizeHttpString(raw.httpOutput),
-    outputMapping: normalizeHttpObject(raw.outputMapping),
-  };
+const validateHttpConfig = (raw: NodeConfig["config"]): NodeConfigValidationError[] => {
+  const errors: NodeConfigValidationError[] = [];
+
+  if (normalizeHttpString(raw.index).trim().length === 0) {
+    errors.push({ field: "index", message: "El index es obligatorio." });
+  }
+
+  if (normalizeHttpString(raw.method).trim().length === 0) {
+    errors.push({ field: "method", message: "El método es obligatorio." });
+  }
+
+  return errors;
 };
 
 const httpNodeConfig: NodeConfigStrategy = {
-  renderConfigForm: ({ config, updateNestedConfig }) => (
-    <div className="config-section">
-      <h4 className="config-section-title">Configuración de HTTP Request</h4>
-
-      <div className="form-group">
-        <label className="form-label">Método</label>
-        <select
-          className="form-select"
-          value={config.config.method ?? "GET"}
-          onChange={(e) => updateNestedConfig("method", e.target.value)}
-        >
-          <option value="GET">GET</option>
-          <option value="POST">POST</option>
-        </select>
-      </div>
-
-      <div className="form-group">
-        <label className="form-label">Index</label>
-        <select
-          className="form-select"
-          value={config.config.index ?? ""}
-          onChange={(e) => updateNestedConfig("index", e.target.value)}
-        >
-          <option value="">Selecciona un juego</option>
-          <option value="The Legend of Zelda: Breath of the Wild">
-            The Legend of Zelda: Breath of the Wild
-          </option>
-          <option value="Elden Ring">Elden Ring</option>
-          <option value="Hollow Knight">Hollow Knight</option>
-          <option value="Street Fighter 6">Street Fighter 6</option>
-          <option value="Final Fantasy VII Rebirth">
-            Final Fantasy VII Rebirth
-          </option>
-        </select>
-      </div>
-
-      {config.config.method !== "POST" && (
-        <>
-          <div className="form-group">
-            <label className="form-label">Timeout (ms)</label>
-            <input
-              type="number"
-              className="form-input"
-              value={config.config.timeoutMs ?? ""}
-              onChange={(e) => updateNestedConfig("timeoutMs", e.target.value)}
-              placeholder="5000"
-              min={0}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Reintentos</label>
-            <input
-              type="number"
-              className="form-input"
-              value={config.config.retries ?? ""}
-              onChange={(e) => updateNestedConfig("retries", e.target.value)}
-              placeholder="3"
-              min={0}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Política de error</label>
-            <select
-              className="form-select"
-              value={config.config.errorPolicy ?? "STOP"}
-              onChange={(e) =>
-                updateNestedConfig("errorPolicy", e.target.value)
-              }
-            >
-              <option value="STOP">STOP</option>
-              <option value="CONTINUE">CONTINUE</option>
-            </select>
-          </div>
-        </>
-      )}
-    </div>
-  ),
-  validateConfig: (raw) => {
-    const errors = [];
-    if ((raw.index ?? "").trim().length === 0) {
-      errors.push({ field: "index", message: "El index es obligatorio." });
-    }
-    if (!raw.method) {
-      errors.push({ field: "method", message: "El método es obligatorio." });
-    }
-    return errors;
-  },
-  normalizeConfig: (raw) => {
-    return buildNormalizedHttpConfig(raw);
-  },
+  renderConfigForm,
+  validateConfig: validateHttpConfig,
+  normalizeConfig: (raw) => buildNormalizedHttpConfig(raw),
 };
 
 export default httpNodeConfig;
