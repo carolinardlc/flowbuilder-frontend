@@ -21,6 +21,7 @@ import {
 import { validateWorkflow } from "./domain/validation";
 import { postWorkflow } from "./services/workflowApi";
 import { downloadWorkflowJson } from "./services/workflowFile";
+import { addWorkflowExecutionToStorage } from "../../../services/workflowExecutionsStorage";
 
 type ValidationDialogState = {
   status: "idle" | "ok" | "error";
@@ -357,6 +358,13 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
       }
 
       setBackendTerminalOutput(result.bodyText || "(sin contenido)");
+      addWorkflowExecutionToStorage({
+        id: `exec-${Date.now()}`,
+        workflowId,
+        executedAt: new Date().toISOString(),
+        status: "SUCCESS",
+        message: result.bodyText || "Workflow enviado correctamente.",
+      });
       setSendResult({
         status: "ok",
         message: "Workflow enviado correctamente.",
@@ -365,6 +373,13 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
       const message =
         error instanceof Error ? error.message : "Error desconocido.";
       setBackendTerminalOutput(message);
+      addWorkflowExecutionToStorage({
+        id: `exec-${Date.now()}`,
+        workflowId,
+        executedAt: new Date().toISOString(),
+        status: "ERROR",
+        message,
+      });
       setSendResult({ status: "error", message });
     } finally {
       setIsSendOpen(true);

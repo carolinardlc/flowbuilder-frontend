@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ConfirmModal from "../components/ConfirmModal";
 import Layout from "../components/Layout";
 import { useWorkflows } from "../context/WorkflowsContext";
+import {
+  loadWorkflowExecutionsFromStorage,
+  type WorkflowExecutionRecord,
+} from "../services/workflowExecutionsStorage";
 
 const statusStyles = {
   ACTIVE: { label: "Activo", className: "badge badge-active" },
@@ -14,10 +18,44 @@ const statusStyles = {
 
 export default function WorkflowsPage() {
   const { workflows, deleteWorkflow } = useWorkflows();
+  const [executions, setExecutions] = useState<WorkflowExecutionRecord[]>([]);
   const [workflowToDelete, setWorkflowToDelete] = useState<{
     id: string;
     name: string;
   } | null>(null);
+
+  useEffect(() => {
+    const reloadExecutions = () => {
+      setExecutions(loadWorkflowExecutionsFromStorage());
+    };
+
+    reloadExecutions();
+    window.addEventListener("focus", reloadExecutions);
+    window.addEventListener("storage", reloadExecutions);
+    return () => {
+      window.removeEventListener("focus", reloadExecutions);
+      window.removeEventListener("storage", reloadExecutions);
+    };
+  }, []);
+
+  const executionsByWorkflow = useMemo(() => {
+    return executions.reduce<Record<string, WorkflowExecutionRecord[]>>(
+      (acc, execution) => {
+        if (!acc[execution.workflowId]) {
+          acc[execution.workflowId] = [];
+        }
+        acc[execution.workflowId].push(execution);
+        return acc;
+      },
+      {},
+    );
+  }, [executions]);
+
+  const formatExecutionDate = (value: string) => {
+    const parsedDate = new Date(value);
+    if (Number.isNaN(parsedDate.getTime())) return value;
+    return parsedDate.toLocaleString("es-ES");
+  };
 
   return (
     <Layout>
@@ -39,6 +77,7 @@ export default function WorkflowsPage() {
         <div className="workflows-grid">
           {workflows.map((workflow) => {
             const status = statusStyles[workflow.status];
+            const workflowExecutions = executionsByWorkflow[workflow.id] ?? [];
             return (
               <article key={workflow.id} className="workflow-card">
                 <div className="workflow-content">
@@ -73,6 +112,31 @@ export default function WorkflowsPage() {
                   >
                     Eliminar
                   </button>
+                </div>
+                <div className="panel-card" style={{ marginTop: "10px" }}>
+                  <p className="panel-label">
+                    Ejecuciones ({workflowExecutions.length})
+                  </p>
+                  {workflowExecutions.length === 0 ? (
+                    <p className="panel-empty" style={{ marginTop: "8px" }}>
+                      Sin ejecuciones registradas.
+                    </p>
+                  ) : (
+                    <ul
+                      style={{
+                        marginTop: "8px",
+                        marginBottom: 0,
+                        paddingLeft: "18px",
+                      }}
+                    >
+                      {workflowExecutions.slice(0, 5).map((execution) => (
+                        <li key={execution.id} style={{ fontSize: "12px" }}>
+                          {formatExecutionDate(execution.executedAt)} -{" "}
+                          {execution.status === "SUCCESS" ? "OK" : "ERROR"}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </article>
             );

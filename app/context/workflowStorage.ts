@@ -2,6 +2,7 @@
 
 import type { Workflow } from "./WorkflowsContext";
 import { removeWorkflowCanvasSnapshot } from "../services/workflowCanvasStorage";
+import { removeWorkflowExecutionsFromStorage } from "../services/workflowExecutionsStorage";
 
 const WORKFLOWS_STORAGE_KEY = "workflows:list";
 
@@ -48,4 +49,5 @@ export const saveWorkflowsToStorage = (workflows: Workflow[]) => {
 
 export const removeWorkflowCanvasFromStorage = (workflowId: string) => {
   removeWorkflowCanvasSnapshot(workflowId);
+  removeWorkflowExecutionsFromStorage(workflowId);
 };
