@@ -19,6 +19,11 @@ const statusStyles = {
 export default function WorkflowsPage() {
   const { workflows, deleteWorkflow } = useWorkflows();
   const [executions, setExecutions] = useState<WorkflowExecutionRecord[]>([]);
+  const [expandedExecutionWorkflows, setExpandedExecutionWorkflows] = useState<
+    Record<string, boolean>
+  >({});
+  const [selectedExecution, setSelectedExecution] =
+    useState<WorkflowExecutionRecord | null>(null);
   const [workflowToDelete, setWorkflowToDelete] = useState<{
     id: string;
     name: string;
@@ -56,6 +61,13 @@ export default function WorkflowsPage() {
     if (Number.isNaN(parsedDate.getTime())) return value;
     return parsedDate.toLocaleString("es-ES");
   };
+
+  const workflowNameById = useMemo(() => {
+    return workflows.reduce<Record<string, string>>((acc, workflow) => {
+      acc[workflow.id] = workflow.name;
+      return acc;
+    }, {});
+  }, [workflows]);
 
   return (
     <Layout>
@@ -114,29 +126,74 @@ export default function WorkflowsPage() {
                   </button>
                 </div>
                 <div className="panel-card" style={{ marginTop: "10px" }}>
-                  <p className="panel-label">
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "10px",
+                    }}
+                  >
+                    <p className="panel-label" style={{ margin: 0 }}>
                     Ejecuciones ({workflowExecutions.length})
-                  </p>
-                  {workflowExecutions.length === 0 ? (
-                    <p className="panel-empty" style={{ marginTop: "8px" }}>
-                      Sin ejecuciones registradas.
                     </p>
-                  ) : (
-                    <ul
-                      style={{
-                        marginTop: "8px",
-                        marginBottom: 0,
-                        paddingLeft: "18px",
-                      }}
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ fontSize: "12px", padding: "6px 10px" }}
+                      onClick={() =>
+                        setExpandedExecutionWorkflows((prev) => ({
+                          ...prev,
+                          [workflow.id]: !prev[workflow.id],
+                        }))
+                      }
                     >
-                      {workflowExecutions.slice(0, 5).map((execution) => (
-                        <li key={execution.id} style={{ fontSize: "12px" }}>
-                          {formatExecutionDate(execution.executedAt)} -{" "}
-                          {execution.status === "SUCCESS" ? "OK" : "ERROR"}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                      {expandedExecutionWorkflows[workflow.id]
+                        ? "Ocultar"
+                        : "Ver"}
+                    </button>
+                  </div>
+                  {expandedExecutionWorkflows[workflow.id] &&
+                    (workflowExecutions.length === 0 ? (
+                      <p className="panel-empty" style={{ marginTop: "8px" }}>
+                        Sin ejecuciones registradas.
+                      </p>
+                    ) : (
+                      <ul
+                        style={{
+                          marginTop: "8px",
+                          marginBottom: 0,
+                          paddingLeft: "18px",
+                        }}
+                      >
+                        {workflowExecutions.slice(0, 5).map((execution) => (
+                          <li
+                            key={execution.id}
+                            style={{
+                              fontSize: "12px",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              gap: "8px",
+                              marginBottom: "4px",
+                            }}
+                          >
+                            <span>
+                              {formatExecutionDate(execution.executedAt)} -{" "}
+                              {execution.status === "SUCCESS" ? "OK" : "ERROR"}
+                            </span>
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              style={{ fontSize: "11px", padding: "4px 8px" }}
+                              onClick={() => setSelectedExecution(execution)}
+                            >
+                              Ver detalle
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ))}
                 </div>
               </article>
             );
@@ -159,6 +216,55 @@ export default function WorkflowsPage() {
             setWorkflowToDelete(null);
           }}
         />
+
+        {selectedExecution && (
+          <div className="modal-overlay" role="dialog" aria-modal="true">
+            <div className="modal-card">
+              <h2 className="workflows-title">Detalle de ejecucion</h2>
+              <div className="form-group" style={{ marginTop: "12px" }}>
+                <p className="panel-label">Execution ID</p>
+                <p className="panel-value">{selectedExecution.id}</p>
+              </div>
+              <div className="form-group" style={{ marginTop: "12px" }}>
+                <p className="panel-label">Workflow</p>
+                <p className="panel-value">
+                  {workflowNameById[selectedExecution.workflowId] ??
+                    selectedExecution.workflowId}
+                </p>
+              </div>
+              <div className="form-group" style={{ marginTop: "12px" }}>
+                <p className="panel-label">Fecha</p>
+                <p className="panel-value">
+                  {formatExecutionDate(selectedExecution.executedAt)}
+                </p>
+              </div>
+              <div className="form-group" style={{ marginTop: "12px" }}>
+                <p className="panel-label">Estado</p>
+                <p className="panel-value">
+                  {selectedExecution.status === "SUCCESS" ? "OK" : "ERROR"}
+                </p>
+              </div>
+              <div className="form-group" style={{ marginTop: "12px" }}>
+                <label className="form-label">Salida completa</label>
+                <textarea
+                  className="form-textarea"
+                  rows={10}
+                  readOnly
+                  value={selectedExecution.message}
+                />
+              </div>
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setSelectedExecution(null)}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     </Layout>
   );
