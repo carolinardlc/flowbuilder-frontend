@@ -68,7 +68,6 @@ export function WorkflowsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loaded = loadWorkflowsFromStorage();
     if (loaded) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setWorkflows(loaded);
     }
     setIsStorageHydrated(true);
