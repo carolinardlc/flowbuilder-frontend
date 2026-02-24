@@ -1,8 +1,8 @@
 "use client";
 
 import type { Workflow } from "../context/WorkflowsContext";
+import { saveWorkflowCanvasSnapshot } from "./workflowCanvasStorage";
 import { formatDateEs } from "../utils/formatDate";
-import { STORAGE_KEYS } from "../workflows/[id]/canvas/constants/storage";
 import {
   convertWorkflowToCanvasSnapshot,
   parseWorkflowImportData,
@@ -81,9 +81,5 @@ export const persistImportedWorkflowSnapshot = (
   workflowId: string,
   snapshot: CanvasSnapshot,
 ) => {
-  const storageKey = STORAGE_KEYS.WORKFLOW_CANVAS(workflowId);
-  if (!storageKey) return;
-
-  localStorage.removeItem(storageKey);
-  localStorage.setItem(storageKey, JSON.stringify(snapshot));
+  saveWorkflowCanvasSnapshot(workflowId, snapshot);
 };

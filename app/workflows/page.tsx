@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import ConfirmModal from "../components/ConfirmModal";
 import Layout from "../components/Layout";
 import { useWorkflows } from "../context/WorkflowsContext";
 
@@ -17,6 +18,7 @@ export default function WorkflowsPage() {
     id: string;
     name: string;
   } | null>(null);
+
   return (
     <Layout>
       <section>
@@ -38,66 +40,61 @@ export default function WorkflowsPage() {
           {workflows.map((workflow) => {
             const status = statusStyles[workflow.status];
             return (
-            <article key={workflow.id} className="workflow-card">
-              <div className="workflow-content">
-                <h2 className="workflow-title">{workflow.name}</h2>
-                <p className="workflow-description">{workflow.description}</p>
-              </div>
-              <div className="workflow-meta-row">
-                <span className={status.className}>{status.label}</span>
-                <span className="workflow-updated">
-                  Actualizado: {workflow.date}
-                </span>
-              </div>
-              <div className="workflow-actions">
-                <Link
-                  href={`/workflows/${workflow.id}`}
-                  className="btn-secondary link-button"
-                >
-                  Abrir
-                </Link>
-                <Link
-                  href={`/workflows/${workflow.id}/edit`}
-                  className="btn-secondary link-button"
-                >
-                  Editar
-                </Link>
-              </div>
-            </article>
+              <article key={workflow.id} className="workflow-card">
+                <div className="workflow-content">
+                  <h2 className="workflow-title">{workflow.name}</h2>
+                  <p className="workflow-description">{workflow.description}</p>
+                </div>
+                <div className="workflow-meta-row">
+                  <span className={status.className}>{status.label}</span>
+                  <span className="workflow-updated">
+                    Actualizado: {workflow.date}
+                  </span>
+                </div>
+                <div className="workflow-actions">
+                  <Link
+                    href={`/workflows/${workflow.id}`}
+                    className="btn-secondary link-button"
+                  >
+                    Abrir
+                  </Link>
+                  <Link
+                    href={`/workflows/${workflow.id}/edit`}
+                    className="btn-secondary link-button"
+                  >
+                    Editar
+                  </Link>
+                  <button
+                    type="button"
+                    className="btn-secondary btn-danger"
+                    onClick={() =>
+                      setWorkflowToDelete({ id: workflow.id, name: workflow.name })
+                    }
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </article>
             );
           })}
         </div>
 
-        {workflowToDelete ? (
-          <div className="modal-overlay" role="dialog" aria-modal="true">
-            <div className="modal-card">
-              <h2 className="workflows-title">Eliminar workflow</h2>
-              <p className="workflows-subtitle">
-                ¿Estás seguro de que deseas eliminar “{workflowToDelete.name}”?
-                Esta acción no se puede deshacer.
-              </p>
-              <div className="form-actions">
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setWorkflowToDelete(null)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  className="btn-primary btn-danger"
-                  onClick={() => {
-                    deleteWorkflow(workflowToDelete.id);
-                    setWorkflowToDelete(null);
-                  }}
-                >
-                  Eliminar
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : null}
+        <ConfirmModal
+          isOpen={!!workflowToDelete}
+          title="Eliminar workflow"
+          message={
+            workflowToDelete
+              ? `Estas seguro de que deseas eliminar "${workflowToDelete.name}"? Esta accion no se puede deshacer.`
+              : ""
+          }
+          confirmLabel="Eliminar"
+          onCancel={() => setWorkflowToDelete(null)}
+          onConfirm={() => {
+            if (!workflowToDelete) return;
+            deleteWorkflow(workflowToDelete.id);
+            setWorkflowToDelete(null);
+          }}
+        />
       </section>
     </Layout>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import StatusModal from "../../../components/StatusModal";
 import WorkflowConnection from "./WorkflowConnection";
 import WorkflowNode from "./WorkflowNode";
 import NodeConfigPanel from "./NodeConfigPanel";
@@ -790,63 +791,33 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
           </div>
         )}
 
-      {isValidationOpen && validationResult.status !== "idle" && (
-        <div className="modal-overlay" role="dialog" aria-modal="true">
-          <div className="modal-card">
-            <h2 className="workflows-title">Validación de workflow</h2>
-            {validationResult.status === "ok" ? (
-              <p className="workflows-subtitle" style={{ color: "#2f7d67" }}>
-                {validationResult.messages[0]}
-              </p>
-            ) : (
-              <>
-                <p className="workflows-subtitle">
-                  Se encontraron los siguientes errores:
-                </p>
-                <ul
-                  style={{ margin: 0, paddingLeft: "18px", color: "#c45757" }}
-                >
-                  {validationResult.messages.map((message) => (
-                    <li key={message}>{message}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-            <div className="form-actions">
-              <button
-                className="btn-secondary"
-                onClick={() => setIsValidationOpen(false)}
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <StatusModal
+        isOpen={isValidationOpen && validationResult.status !== "idle"}
+        title="Validacion de workflow"
+        status={validationResult.status === "idle" ? undefined : validationResult.status}
+        message={
+          validationResult.status === "ok"
+            ? validationResult.messages[0]
+            : undefined
+        }
+        introText={
+          validationResult.status === "error"
+            ? "Se encontraron los siguientes errores:"
+            : undefined
+        }
+        messages={
+          validationResult.status === "error" ? validationResult.messages : undefined
+        }
+        onClose={() => setIsValidationOpen(false)}
+      />
 
-      {isSendOpen && sendResult.status !== "idle" && (
-        <div className="modal-overlay" role="dialog" aria-modal="true">
-          <div className="modal-card">
-            <h2 className="workflows-title">Envío al backend</h2>
-            <p
-              className="workflows-subtitle"
-              style={{
-                color: sendResult.status === "ok" ? "#2f7d67" : "#c45757",
-              }}
-            >
-              {sendResult.message}
-            </p>
-            <div className="form-actions">
-              <button
-                className="btn-secondary"
-                onClick={() => setIsSendOpen(false)}
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <StatusModal
+        isOpen={isSendOpen && sendResult.status !== "idle"}
+        title="Envio al backend"
+        status={sendResult.status === "idle" ? undefined : sendResult.status}
+        message={sendResult.message}
+        onClose={() => setIsSendOpen(false)}
+      />
     </div>
   );
 }

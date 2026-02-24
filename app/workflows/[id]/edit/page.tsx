@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import ConfirmModal from "../../../components/ConfirmModal";
 import Layout from "../../../components/Layout";
 import { useWorkflows } from "../../../context/WorkflowsContext";
 import { formatDateEs } from "../../../utils/formatDate";
@@ -101,37 +102,23 @@ export default function EditWorkflowPage() {
           />
         )}
 
-        {workflow && showDeleteModal ? (
-          <div className="modal-overlay" role="dialog" aria-modal="true">
-            <div className="modal-card">
-              <h2 className="workflows-title">Eliminar workflow</h2>
-              <p className="workflows-subtitle">
-                Estas seguro de que deseas eliminar "{workflow.name}"? Esta
-                accion no se puede deshacer.
-              </p>
-              <div className="form-actions">
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setShowDeleteModal(false)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  className="btn-primary btn-danger"
-                  onClick={() => {
-                    deleteWorkflow(workflow.id);
-                    setShowDeleteModal(false);
-                    router.push("/workflows");
-                  }}
-                >
-                  Eliminar
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : null}
+        <ConfirmModal
+          isOpen={!!workflow && showDeleteModal}
+          title="Eliminar workflow"
+          message={
+            workflow
+              ? `Estas seguro de que deseas eliminar "${workflow.name}"? Esta accion no se puede deshacer.`
+              : ""
+          }
+          confirmLabel="Eliminar"
+          onCancel={() => setShowDeleteModal(false)}
+          onConfirm={() => {
+            if (!workflow) return;
+            deleteWorkflow(workflow.id);
+            setShowDeleteModal(false);
+            router.push("/workflows");
+          }}
+        />
       </section>
     </Layout>
   );

@@ -1,5 +1,34 @@
 import type { NodeConfigStrategy } from "./types";
 
+const normalizeHttpErrorPolicy = (value: unknown) => {
+  return value === "STOP_ON_FAIL" ? "STOP" : (value ?? "STOP");
+};
+
+const normalizeHttpString = (value: unknown, fallback = "") => {
+  return typeof value === "string" ? value : fallback;
+};
+
+const normalizeHttpObject = (value: unknown) => {
+  return typeof value === "object" && value !== null ? value : {};
+};
+
+const buildNormalizedHttpConfig = (
+  raw: Record<string, unknown>,
+): Record<string, unknown> => {
+  return {
+    ...raw,
+    method: normalizeHttpString(raw.method, "GET"),
+    index: normalizeHttpString(raw.index),
+    timeoutMs: normalizeHttpString(raw.timeoutMs),
+    retries: normalizeHttpString(raw.retries),
+    errorPolicy: normalizeHttpErrorPolicy(raw.errorPolicy),
+    headers: normalizeHttpObject(raw.headers),
+    body: normalizeHttpString(raw.body),
+    httpOutput: normalizeHttpString(raw.httpOutput),
+    outputMapping: normalizeHttpObject(raw.outputMapping),
+  };
+};
+
 const httpNodeConfig: NodeConfigStrategy = {
   renderConfigForm: ({ config, updateNestedConfig }) => (
     <div className="config-section">
@@ -91,20 +120,7 @@ const httpNodeConfig: NodeConfigStrategy = {
     return errors;
   },
   normalizeConfig: (raw) => {
-    const normalizedErrorPolicy =
-      raw.errorPolicy === "STOP_ON_FAIL" ? "STOP" : raw.errorPolicy;
-    return {
-      ...raw,
-      method: raw.method ?? "GET",
-      index: raw.index ?? "",
-      timeoutMs: raw.timeoutMs ?? "",
-      retries: raw.retries ?? "",
-      errorPolicy: normalizedErrorPolicy ?? "STOP",
-      headers: raw.headers ?? {},
-      body: raw.body ?? "",
-      httpOutput: raw.httpOutput ?? "",
-      outputMapping: raw.outputMapping ?? {},
-    };
+    return buildNormalizedHttpConfig(raw);
   },
 };
 

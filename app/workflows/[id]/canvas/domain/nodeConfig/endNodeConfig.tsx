@@ -1,4 +1,19 @@
-import type { NodeConfigStrategy } from "./types";
+import type { NodeConfigStrategy, NodeConfigValidationError } from "./types";
+
+const isRequiredTextMissing = (value: unknown) => {
+  return String(value ?? "").trim().length === 0;
+};
+
+const pushRequiredError = (
+  errors: NodeConfigValidationError[],
+  field: string,
+  message: string,
+  value: unknown,
+) => {
+  if (isRequiredTextMissing(value)) {
+    errors.push({ field, message });
+  }
+};
 
 const endNodeConfig: NodeConfigStrategy = {
   renderConfigForm: ({ config, updateNestedConfig }) => (
@@ -29,13 +44,14 @@ const endNodeConfig: NodeConfigStrategy = {
     </div>
   ),
   validateConfig: (raw) => {
-    const errors = [];
-    if ((raw.outputType ?? "").trim().length === 0) {
-      errors.push({ field: "outputType", message: "Tipo de salida requerido." });
-    }
-    if ((raw.message ?? "").trim().length === 0) {
-      errors.push({ field: "message", message: "Mensaje requerido." });
-    }
+    const errors: NodeConfigValidationError[] = [];
+    pushRequiredError(
+      errors,
+      "outputType",
+      "Tipo de salida requerido.",
+      raw.outputType,
+    );
+    pushRequiredError(errors, "message", "Mensaje requerido.", raw.message);
     return errors;
   },
   normalizeConfig: (raw) => ({

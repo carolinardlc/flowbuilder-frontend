@@ -22,76 +22,77 @@ const resolveHttpIndexNumber = (indexValue?: string) => {
   return n;
 };
 
-// Serializador puro para exportación JSON.
+const resolveHttpExportMetadata = (node: Workflow["nodes"][number]) => {
+  const timeout = Number(node.config?.timeoutMs ?? "");
+  const attempts = Number(node.config?.retries ?? "");
+
+  return {
+    politica: (node.config?.errorPolicy === "CONTINUE"
+      ? "CONTINUE"
+      : "STOP") as "STOP" | "CONTINUE",
+    timeout: Number.isFinite(timeout) ? timeout : undefined,
+    attempts: Number.isFinite(attempts) ? attempts : undefined,
+  };
+};
+
+const toExportHttpNode = (node: Workflow["nodes"][number]) => {
+  const method = node.config?.method ?? "GET";
+  const index = resolveHttpIndexNumber(node.config?.index);
+
+  return {
+    id: node.id,
+    name: node.title,
+    type: "HTTP" as const,
+    method,
+    index,
+    ...(method === "GET" ? resolveHttpExportMetadata(node) : {}),
+  };
+};
+
+const toExportCommandNode = (node: Workflow["nodes"][number]) => ({
+  id: node.id,
+  name: node.title,
+  type: "COMMAND" as const,
+  command: node.config?.command ?? "",
+});
+
+const toExportConditionalNode = (node: Workflow["nodes"][number]) => ({
+  id: node.id,
+  name: node.title,
+  type: "CONDITIONAL" as const,
+  target: node.config?.sourceNodeId ?? "",
+});
+
+const toExportEndNode = (node: Workflow["nodes"][number]) => ({
+  id: node.id,
+  name: node.title,
+  type: "END" as const,
+  outputType: node.config?.outputType,
+  message: node.config?.message,
+});
+
+const toExportStartNode = (node: Workflow["nodes"][number]) => ({
+  id: node.id,
+  name: node.title,
+  type: "START" as const,
+});
+
+const toExportNode = (node: Workflow["nodes"][number]) => {
+  if (node.type === "HTTP_REQUEST") return toExportHttpNode(node);
+  if (node.type === "COMMAND") return toExportCommandNode(node);
+  if (node.type === "CONDITIONAL") return toExportConditionalNode(node);
+  if (node.type === "END") return toExportEndNode(node);
+  return toExportStartNode(node);
+};
+
 export function toExportWorkflow(workflow: Workflow): ExportWorkflowJson {
   const orderedNodes = orderNodesByConnections(
     workflow.nodes,
     workflow.connections,
   );
-  const safeConnections = getSafeConnections(
-    workflow.nodes,
-    workflow.connections,
-  );
+  const safeConnections = getSafeConnections(workflow.nodes, workflow.connections);
 
-  const nodes = orderedNodes.map((node) => {
-    if (node.type === "HTTP_REQUEST") {
-      const method = node.config?.method ?? "GET";
-      const timeout = Number(node.config?.timeoutMs ?? "");
-      const attempts = Number(node.config?.retries ?? "");
-      const index = resolveHttpIndexNumber(node.config?.index);
-
-      return {
-        id: node.id,
-        name: node.title,
-        type: "HTTP" as const,
-        method,
-        index,
-        ...(method === "GET"
-          ? {
-              politica: (node.config?.errorPolicy === "CONTINUE"
-                ? "CONTINUE"
-                : "STOP") as "STOP" | "CONTINUE",
-              timeout: Number.isFinite(timeout) ? timeout : undefined,
-              attempts: Number.isFinite(attempts) ? attempts : undefined,
-            }
-          : {}),
-      };
-    }
-
-    if (node.type === "COMMAND") {
-      return {
-        id: node.id,
-        name: node.title,
-        type: "COMMAND" as const,
-        command: node.config?.command ?? "",
-      };
-    }
-
-    if (node.type === "CONDITIONAL") {
-      return {
-        id: node.id,
-        name: node.title,
-        type: "CONDITIONAL" as const,
-        target: node.config?.sourceNodeId ?? "",
-      };
-    }
-
-    if (node.type === "END") {
-      return {
-        id: node.id,
-        name: node.title,
-        type: "END" as const,
-        outputType: node.config?.outputType,
-        message: node.config?.message,
-      };
-    }
-
-    return {
-      id: node.id,
-      name: node.title,
-      type: "START" as const,
-    };
-  });
+  const nodes = orderedNodes.map(toExportNode);
 
   const connections = safeConnections.map((connection) => {
     const fromNode = workflow.nodes.find((node) => node.id === connection.from);

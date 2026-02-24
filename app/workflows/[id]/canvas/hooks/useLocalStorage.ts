@@ -5,6 +5,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { WorkflowNodeData, Connection } from "../types";
 import { STORAGE_KEYS } from "../constants/storage";
+import {
+  loadWorkflowCanvasSnapshot,
+  saveWorkflowCanvasSnapshot,
+} from "../../../../services/workflowCanvasStorage";
 import { syncWorkflowCanvasSnapshot } from "../services/workflowApi";
 
 interface UseLocalStorageProps {
@@ -16,28 +20,6 @@ interface UseLocalStorageProps {
   onNodeIdCounterUpdate: (counter: number) => void;
   onSetNextNodeId: (id: number) => void;
 }
-
-const isValidNode = (value: unknown): value is WorkflowNodeData => {
-  if (!value || typeof value !== "object") return false;
-  const node = value as Partial<WorkflowNodeData>;
-  return (
-    typeof node.id === "string" &&
-    typeof node.title === "string" &&
-    typeof node.type === "string" &&
-    typeof node.x === "number" &&
-    typeof node.y === "number"
-  );
-};
-
-const isValidConnection = (value: unknown): value is Connection => {
-  if (!value || typeof value !== "object") return false;
-  const connection = value as Partial<Connection>;
-  return (
-    typeof connection.id === "string" &&
-    typeof connection.from === "string" &&
-    typeof connection.to === "string"
-  );
-};
 
 export function useLocalStorage({
   workflowId,
@@ -52,59 +34,39 @@ export function useLocalStorage({
   const [isHydrated, setIsHydrated] = useState(false);
   const hasSkippedInitialSave = useRef(false);
 
-  // Cargar datos desde localStorage
   useEffect(() => {
     if (!storageKey) return;
     hasSkippedInitialSave.current = false;
 
     try {
-      const raw = localStorage.getItem(storageKey);
-      if (!raw) return;
+      const snapshot = loadWorkflowCanvasSnapshot(workflowId);
+      if (!snapshot) return;
 
-      const parsed = JSON.parse(raw) as {
-        nodes?: WorkflowNodeData[];
-        connections?: Connection[];
-      };
+      onNodesLoaded(snapshot.nodes);
+      onConnectionsLoaded(snapshot.connections);
 
-      const loadedNodes = Array.isArray(parsed.nodes)
-        ? parsed.nodes.filter(isValidNode)
-        : [];
-      const nodeIds = new Set(loadedNodes.map((node) => node.id));
-      const loadedConnections = Array.isArray(parsed.connections)
-        ? parsed.connections.filter(
-            (connection) =>
-              isValidConnection(connection) &&
-              nodeIds.has(connection.from) &&
-              nodeIds.has(connection.to),
-          )
-        : [];
-
-      onNodesLoaded(loadedNodes);
-      onConnectionsLoaded(loadedConnections);
-
-      // Recalcular contador para no repetir ids
       const maxNum =
-        loadedNodes
-          .map((n) => Number(String(n.id).replace("node-", "")))
-          .filter((x) => Number.isFinite(x))
-          .reduce((a, b) => Math.max(a, b), 0) || 0;
+        snapshot.nodes
+          .map((node) => Number(String(node.id).replace("node-", "")))
+          .filter((value) => Number.isFinite(value))
+          .reduce((max, value) => Math.max(max, value), 0) || 0;
 
       onNodeIdCounterUpdate(maxNum + 1);
       onSetNextNodeId(maxNum + 1);
-    } catch (err) {
-      console.error("Error loading canvas from localStorage:", err);
+    } catch (error) {
+      console.error("Error loading canvas from localStorage:", error);
     } finally {
       setIsHydrated(true);
     }
   }, [
     storageKey,
+    workflowId,
     onNodesLoaded,
     onConnectionsLoaded,
     onNodeIdCounterUpdate,
     onSetNextNodeId,
   ]);
 
-  // Guardar datos en localStorage
   useEffect(() => {
     if (!storageKey) return;
     if (!isHydrated) return;
@@ -115,11 +77,10 @@ export function useLocalStorage({
 
     try {
       const payload = { nodes, connections };
-      localStorage.setItem(storageKey, JSON.stringify(payload));
-      // Refactor: la sincronización remota sale del hook y vive en services/.
+      saveWorkflowCanvasSnapshot(workflowId, payload);
       void syncWorkflowCanvasSnapshot(workflowId, payload);
-    } catch (err) {
-      console.error("Error saving canvas to localStorage:", err);
+    } catch (error) {
+      console.error("Error saving canvas to localStorage:", error);
     }
   }, [storageKey, nodes, connections, isHydrated, workflowId]);
 }

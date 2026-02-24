@@ -1,9 +1,9 @@
 "use client";
 
 import type { Workflow } from "./WorkflowsContext";
+import { removeWorkflowCanvasSnapshot } from "../services/workflowCanvasStorage";
 
 const WORKFLOWS_STORAGE_KEY = "workflows:list";
-const WORKFLOW_CANVAS_STORAGE_PREFIX = "workflow-canvas:";
 
 const isWorkflow = (value: unknown): value is Workflow => {
   if (!value || typeof value !== "object") return false;
@@ -47,14 +47,5 @@ export const saveWorkflowsToStorage = (workflows: Workflow[]) => {
 };
 
 export const removeWorkflowCanvasFromStorage = (workflowId: string) => {
-  if (typeof window === "undefined") return;
-
-  const id = String(workflowId ?? "").trim();
-  if (!id) return;
-
-  try {
-    localStorage.removeItem(`${WORKFLOW_CANVAS_STORAGE_PREFIX}${id}`);
-  } catch (error) {
-    console.error("Error removing workflow canvas from localStorage:", error);
-  }
+  removeWorkflowCanvasSnapshot(workflowId);
 };
