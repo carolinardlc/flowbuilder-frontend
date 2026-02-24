@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useWorkflows } from "../context/WorkflowsContext";
-
 import {
   persistImportedWorkflowSnapshot,
   processWorkflowImport,
@@ -14,11 +13,7 @@ import Toast from "./Toast";
 const navItems = [
   { label: "Inicio", href: "/" },
   { label: "Workflows", href: "/workflows" },
-<<<<<<< HEAD
   { label: "Configuracion", href: "/configuracion" },
-=======
-  { label: "Configuración", href: "/configuracion" },
->>>>>>> origin/main
 ];
 
 type ToastState = {
@@ -31,16 +26,7 @@ export default function Header() {
   const router = useRouter();
   const { upsertWorkflow } = useWorkflows();
 
-<<<<<<< HEAD
   const [toast, setToast] = useState<ToastState | null>(null);
-=======
-  // 3. Estado para manejar las notificaciones
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error" | "warning";
-  } | null>(null);
-
->>>>>>> origin/main
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isBackendEditEnabled, setIsBackendEditEnabled] = useState(false);
   const [backendUrl, setBackendUrl] = useState("192.168.5.2");
@@ -76,7 +62,6 @@ export default function Header() {
     }
   };
 
-<<<<<<< HEAD
   const navigateToImportedWorkflow = (workflowRoute: string) => {
     setTimeout(() => {
       if (pathname.startsWith(workflowRoute)) {
@@ -88,9 +73,6 @@ export default function Header() {
   };
 
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-=======
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
->>>>>>> origin/main
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -98,92 +80,9 @@ export default function Header() {
       const rawJson = await file.text();
       const result = processWorkflowImport(rawJson);
 
-<<<<<<< HEAD
       if (!result.ok) {
         setToast({ message: result.error, type: "error" });
         return;
-=======
-        // 1. Verificamos que sea un JSON válido (sintaxis)
-        try {
-          data = JSON.parse(rawJson);
-        } catch (error) {
-          setToast({
-            message: "El archivo está corrupto o no es un JSON válido.",
-            type: "error",
-          });
-          event.target.value = "";
-          return;
-        }
-
-        // 2. Validación Estructural (Tu Tarea FE-7)
-        // Verificamos que tenga la forma correcta (nodes, connections, ids)
-        const validation = validateWorkflowImport(data);
-        if (!validation.isValid) {
-          setToast({
-            message: validation.error || "Estructura del workflow inválida.",
-            type: "error",
-          });
-          event.target.value = "";
-          return;
-        }
-
-        // 3. Procesamiento del Workflow (Lógica existente)
-        const parsed = parseWorkflowImportJson(rawJson);
-
-        if (!parsed.ok) {
-          setToast({
-            message: parsed.error || "Error al importar el workflow.",
-            type: "error",
-          });
-          event.target.value = "";
-          return;
-        }
-
-        const snapshot = convertWorkflowToCanvasSnapshot(parsed.workflow);
-        const storageKey = `workflow-canvas:${parsed.workflow.id}`;
-        localStorage.removeItem(storageKey);
-        localStorage.setItem(storageKey, JSON.stringify(snapshot));
-
-        const formattedDate = new Date().toLocaleDateString("es-ES", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        });
-
-        upsertWorkflow({
-          id: parsed.workflow.id,
-          name: parsed.workflow.name,
-          description: `Importado desde JSON (${snapshot.nodes.length} nodos)`,
-          status: "ACTIVE",
-          date: formattedDate,
-        });
-
-        if (parsed.warning) {
-          setToast({ message: parsed.warning, type: "warning" });
-        } else {
-          setToast({
-            message: "Workflow importado correctamente.",
-            type: "success",
-          });
-        }
-
-        const workflowRoute = `/workflows/${parsed.workflow.id}`;
-
-        setTimeout(() => {
-          if (pathname.startsWith(workflowRoute)) {
-            window.location.reload();
-          } else {
-            router.push(workflowRoute);
-          }
-        }, 500);
-      } catch (err) {
-        setToast({
-          message: "Ocurrió un error inesperado al leer el archivo.",
-          type: "error",
-        });
-      } finally {
-        event.target.value = "";
->>>>>>> origin/main
       }
 
       persistImportedWorkflowSnapshot(result.workflowId, result.snapshot);
@@ -219,11 +118,7 @@ export default function Header() {
           </div>
           <nav className="nav">
             {navItems.map((item) => {
-<<<<<<< HEAD
               if (item.label === "Configuracion") {
-=======
-              if (item.label === "Configuración") {
->>>>>>> origin/main
                 return (
                   <button
                     key={item.label}
@@ -265,10 +160,6 @@ export default function Header() {
         </div>
       </header>
 
-<<<<<<< HEAD
-=======
-      {/* 5. Renderizamos el Toast aquí */}
->>>>>>> origin/main
       {toast && (
         <Toast
           message={toast.message}
@@ -280,11 +171,7 @@ export default function Header() {
       {isConfigOpen && (
         <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="modal-card">
-<<<<<<< HEAD
             <h2 className="workflows-title">Configuracion</h2>
-=======
-            <h2 className="workflows-title">Configuración</h2>
->>>>>>> origin/main
             <div className="form-group" style={{ marginTop: "12px" }}>
               <label
                 className="form-label"
@@ -357,11 +244,7 @@ export default function Header() {
                   saveBackendConfig();
                   setIsConfigOpen(false);
                   setToast({
-<<<<<<< HEAD
                     message: "Configuracion guardada.",
-=======
-                    message: "Configuración guardada.",
->>>>>>> origin/main
                     type: "success",
                   });
                 }}
