@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 type StatusModalProps = {
   isOpen: boolean;
   title: string;
@@ -8,6 +10,7 @@ type StatusModalProps = {
   messages?: string[];
   introText?: string;
   closeLabel?: string;
+  children?: ReactNode;
   onClose: () => void;
 };
 
@@ -19,6 +22,7 @@ export default function StatusModal({
   messages,
   introText,
   closeLabel = "Cerrar",
+  children,
   onClose,
 }: StatusModalProps) {
   if (!isOpen) return null;
@@ -44,6 +48,7 @@ export default function StatusModal({
             ))}
           </ul>
         ) : null}
+        {children}
         <div className="form-actions">
           <button type="button" className="btn-secondary" onClick={onClose}>
             {closeLabel}

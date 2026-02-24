@@ -398,6 +398,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
       setIsExecuting(true);
       window.setTimeout(() => setIsExecuting(false), 2200);
     });
+    void handleSendToBackend();
   };
 
   const buildConnectionPath = (
@@ -474,22 +475,6 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
             <button className="btn-primary" onClick={handleDownloadJson}>
               Descargar
             </button>
-            <button
-              className="btn-secondary panel-send-button"
-              onClick={handleSendToBackend}
-            >
-              Enviar al backend
-            </button>
-          </div>
-
-          <div className="form-group" style={{ marginTop: "14px" }}>
-            <label className="form-label">Terminal de salida</label>
-            <textarea
-              className="form-textarea"
-              value={backendTerminalOutput}
-              readOnly
-              rows={10}
-            />
           </div>
         </aside>
       </div>
@@ -833,11 +818,21 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
 
       <StatusModal
         isOpen={isSendOpen && sendResult.status !== "idle"}
-        title="Envio al backend"
+        title="Envio realizado"
         status={sendResult.status === "idle" ? undefined : sendResult.status}
         message={sendResult.message}
         onClose={() => setIsSendOpen(false)}
-      />
+      >
+        <div className="form-group" style={{ marginTop: "14px" }}>
+          <label className="form-label">Terminal de salida</label>
+          <textarea
+            className="form-textarea"
+            value={backendTerminalOutput}
+            readOnly
+            rows={10}
+          />
+        </div>
+      </StatusModal>
     </div>
   );
 }
