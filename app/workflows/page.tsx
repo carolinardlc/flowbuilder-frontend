@@ -16,6 +16,69 @@ const statusStyles = {
   DONE: { label: "Listo", className: "badge badge-done" },
 } as const;
 
+type WorkflowExecutionVariable = { key: string; value: unknown };
+type WorkflowExecutionOutput = {
+  flow: unknown;
+  variableList: WorkflowExecutionVariable[];
+};
+
+const isObjectRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === "object" && value !== null;
+};
+
+const parseExecutionOutput = (rawOutput: string): WorkflowExecutionOutput | null => {
+  if (!rawOutput.trim()) return null;
+
+  try {
+    const parsed = JSON.parse(rawOutput) as unknown;
+    if (!isObjectRecord(parsed)) return null;
+
+    const variableListRaw = parsed.variableList;
+    const variableList = Array.isArray(variableListRaw)
+      ? variableListRaw
+          .filter(isObjectRecord)
+          .filter(
+            (
+              item,
+            ): item is {
+              key: string;
+              value?: unknown;
+            } => typeof item.key === "string",
+          )
+          .map((item) => ({
+            key: item.key,
+            value: item.value,
+          }))
+      : [];
+
+    return {
+      flow: parsed.flow,
+      variableList,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const getVisibleExecutionVariables = (
+  variables: WorkflowExecutionVariable[],
+): WorkflowExecutionVariable[] => {
+  return variables.filter((variable) => typeof variable.value !== "boolean");
+};
+
+const formatExecutionValue = (value: unknown): string => {
+  if (value === null) return "null";
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? String(value) : "NaN";
+  if (typeof value === "undefined") return "undefined";
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+};
+
 export default function WorkflowsPage() {
   const { workflows, deleteWorkflow } = useWorkflows();
   const [executions, setExecutions] = useState<WorkflowExecutionRecord[]>([]);
@@ -68,6 +131,12 @@ export default function WorkflowsPage() {
       return acc;
     }, {});
   }, [workflows]);
+  const selectedExecutionOutput = selectedExecution
+    ? parseExecutionOutput(selectedExecution.message)
+    : null;
+  const selectedExecutionVariables = selectedExecutionOutput
+    ? getVisibleExecutionVariables(selectedExecutionOutput.variableList)
+    : [];
 
   return (
     <Layout>
@@ -219,39 +288,78 @@ export default function WorkflowsPage() {
 
         {selectedExecution && (
           <div className="modal-overlay" role="dialog" aria-modal="true">
-            <div className="modal-card">
+            <div className="modal-card execution-detail-modal">
               <h2 className="workflows-title">Detalle de ejecucion</h2>
-              <div className="form-group" style={{ marginTop: "12px" }}>
+              <div className="form-group">
                 <p className="panel-label">Execution ID</p>
                 <p className="panel-value">{selectedExecution.id}</p>
               </div>
-              <div className="form-group" style={{ marginTop: "12px" }}>
+              <div className="form-group">
                 <p className="panel-label">Workflow</p>
                 <p className="panel-value">
                   {workflowNameById[selectedExecution.workflowId] ??
                     selectedExecution.workflowId}
                 </p>
               </div>
-              <div className="form-group" style={{ marginTop: "12px" }}>
+              <div className="form-group">
                 <p className="panel-label">Fecha</p>
                 <p className="panel-value">
                   {formatExecutionDate(selectedExecution.executedAt)}
                 </p>
               </div>
-              <div className="form-group" style={{ marginTop: "12px" }}>
+              <div className="form-group">
                 <p className="panel-label">Estado</p>
                 <p className="panel-value">
                   {selectedExecution.status === "SUCCESS" ? "OK" : "ERROR"}
                 </p>
               </div>
-              <div className="form-group" style={{ marginTop: "12px" }}>
+              <div className="form-group">
                 <label className="form-label">Salida completa</label>
-                <textarea
-                  className="form-textarea"
-                  rows={10}
-                  readOnly
-                  value={selectedExecution.message}
-                />
+                {selectedExecutionOutput ? (
+                  <section
+                    className="execution-output"
+                    aria-label="Resultado detallado de ejecucion"
+                  >
+                    <div className="execution-summary-grid">
+                      <article className="execution-summary-card">
+                        <p className="execution-summary-label">Estado del flujo</p>
+                        <p className="execution-summary-value">
+                          {selectedExecutionOutput.flow === null
+                            ? "No retornado"
+                            : "Disponible"}
+                        </p>
+                      </article>
+                      <article className="execution-summary-card">
+                        <p className="execution-summary-label">Variables recibidas</p>
+                        <p className="execution-summary-value">
+                          {selectedExecutionVariables.length}
+                        </p>
+                      </article>
+                    </div>
+                    {selectedExecutionVariables.length > 0 ? (
+                      <div className="execution-variables">
+                        <p className="execution-summary-label">Variables</p>
+                        <ul className="execution-variables-list">
+                          {selectedExecutionVariables.map((variable) => (
+                            <li key={variable.key} className="execution-variable-item">
+                              <span className="execution-variable-key">{variable.key}</span>
+                              <span className="execution-variable-value">
+                                {formatExecutionValue(variable.value)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                  </section>
+                ) : (
+                  <textarea
+                    className="form-textarea"
+                    rows={10}
+                    readOnly
+                    value={selectedExecution.message}
+                  />
+                )}
               </div>
               <div className="form-actions">
                 <button

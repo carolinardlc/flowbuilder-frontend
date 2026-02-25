@@ -407,6 +407,97 @@ body {
   gap: 1.25rem;
 }
 
+.execution-output {
+  margin-top: 0.25rem;
+}
+
+.execution-detail-modal {
+  gap: 0.7rem;
+}
+
+.execution-detail-modal .form-group {
+  margin-bottom: 0.45rem;
+}
+
+.execution-detail-modal .panel-label {
+  margin: 0 0 0.15rem;
+}
+
+.execution-detail-modal .form-label {
+  margin-bottom: 0.3rem;
+}
+
+.execution-detail-modal .form-actions {
+  margin-top: 0.2rem;
+}
+
+.execution-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.execution-summary-card {
+  border-radius: 1rem;
+  padding: 0.85rem 0.95rem;
+  background: rgba(249, 231, 212, 0.45);
+  border: 1px solid rgba(74, 74, 74, 0.1);
+}
+
+.execution-summary-label {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(74, 74, 74, 0.6);
+}
+
+.execution-summary-value {
+  margin: 0.4rem 0 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.execution-variables {
+  margin-top: 0.85rem;
+}
+
+.execution-variables-list {
+  margin: 0.45rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.execution-variable-item {
+  border-radius: 0.85rem;
+  border: 1px solid rgba(74, 74, 74, 0.1);
+  background: #fffdf9;
+  padding: 0.65rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.execution-variable-key {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgba(74, 74, 74, 0.7);
+  word-break: break-word;
+}
+
+.execution-variable-value {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .canvas-shell {
   margin-top: 0.5rem;
   width: 100%;
@@ -1201,5 +1292,9 @@ body {
 
   .canvas-stage {
     order: 1;
+  }
+
+  .execution-summary-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
