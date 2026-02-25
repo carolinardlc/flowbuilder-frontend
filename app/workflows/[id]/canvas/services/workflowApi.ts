@@ -3,7 +3,7 @@ import type { Connection, WorkflowNodeData } from "../types";
 
 export const DEFAULT_WORKFLOW_RUN_ENDPOINT =
   process.env.NEXT_PUBLIC_WORKFLOW_RUN_URL ??
-  "http://192.168.5.2:8080/api/workflows/run";
+  "http://192.168.56.1:8080/api/workflows/run";
 
 export type WorkflowApiResult = {
   ok: boolean;

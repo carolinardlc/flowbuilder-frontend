@@ -29,7 +29,7 @@ export default function Header() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isBackendEditEnabled, setIsBackendEditEnabled] = useState(false);
-  const [backendUrl, setBackendUrl] = useState("192.168.5.2");
+  const [backendUrl, setBackendUrl] = useState("192.168.56.1");
   const [backendPort, setBackendPort] = useState("3000");
 
   const loadBackendConfig = () => {
@@ -51,7 +51,7 @@ export default function Header() {
 
   const saveBackendConfig = () => {
     if (typeof window === "undefined") return;
-    const url = backendUrl.trim() || "192.168.5.2";
+    const url = backendUrl.trim() || "192.168.56.1";
     const port = backendPort.trim() || "3000";
     setBackendUrl(url);
     setBackendPort(port);
@@ -184,7 +184,7 @@ export default function Header() {
                     setIsBackendEditEnabled((prev) => {
                       const next = !prev;
                       if (!next) {
-                        setBackendUrl("192.168.5.2");
+                        setBackendUrl("192.168.56.1");
                         setBackendPort("8080");
                       }
                       return next;
@@ -208,7 +208,7 @@ export default function Header() {
                 className="form-input"
                 value={backendUrl}
                 onChange={(e) => setBackendUrl(e.target.value)}
-                placeholder="192.168.5.2"
+                placeholder="192.168.56.1"
                 disabled={!isBackendEditEnabled}
                 style={{
                   opacity: isBackendEditEnabled ? 1 : 0.55,
