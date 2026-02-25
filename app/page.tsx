@@ -21,7 +21,7 @@ export default function Home() {
           <Link href="/workflows" className="btn-primary link-button">
             Crear workflow
           </Link>
-          <button className="btn-secondary">Ver ejemplos</button>
+          <Link href="/workflows" className="btn-secondary link-button">Ver ejemplos</Link>
         </div>
 
         <div className="feature-grid">

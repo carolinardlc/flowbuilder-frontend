@@ -2,100 +2,24 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import StatusModal from "../../../components/StatusModal";
-import WorkflowConnection from "./WorkflowConnection";
 import WorkflowNode from "./WorkflowNode";
 import NodeConfigPanel from "./NodeConfigPanel";
-import { NODE_TYPES, NODE_TYPE_ARRAY } from "./constants/nodeTypes";
 import { CANVAS_CONFIG } from "./constants/storage";
 import { useCanvasState } from "./hooks/useCanvasState";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useDragAndDrop } from "./hooks/useDragAndDrop";
 import { useConnections } from "./hooks/useConnections";
+import { useWorkflowExecution } from "./hooks/useWorkflowExecution";
 import { createNode } from "./utils/nodeUtils";
 import type { CanvasProps, Connection, WorkflowNodeData } from "./types";
 import { useWorkflows } from "../../../context/WorkflowsContext";
-import {
-  toExportWorkflow,
-  type Workflow as WorkflowSerializationModel,
-} from "./domain/serialization";
-import { validateWorkflow } from "./domain/validation";
-import { postWorkflow } from "./services/workflowApi";
-import { downloadWorkflowJson } from "./services/workflowFile";
-import { addWorkflowExecutionToStorage } from "../../../services/workflowExecutionsStorage";
-
-type ValidationDialogState = {
-  status: "idle" | "ok" | "error";
-  messages: string[];
-};
-
-type SendDialogState = {
-  status: "idle" | "ok" | "error";
-  message: string;
-};
+import NodePalette from "./components/NodePalette";
+import NodeDetailPanel from "./components/NodeDetailPanel";
+import CanvasConnectionsLayer from "./components/CanvasConnectionsLayer";
+import DragPreview from "./components/DragPreview";
+import ExecutionLayer from "./components/ExecutionLayer";
 
 type IncomingNodeOption = { id: string; name: string; type: string };
-type WorkflowExecutionVariable = { key: string; value: unknown };
-type WorkflowExecutionOutput = {
-  flow: unknown;
-  variableList: WorkflowExecutionVariable[];
-};
-
-const isObjectRecord = (value: unknown): value is Record<string, unknown> => {
-  return typeof value === "object" && value !== null;
-};
-
-const parseExecutionOutput = (rawOutput: string): WorkflowExecutionOutput | null => {
-  if (!rawOutput.trim()) return null;
-
-  try {
-    const parsed = JSON.parse(rawOutput) as unknown;
-    if (!isObjectRecord(parsed)) return null;
-
-    const variableListRaw = parsed.variableList;
-    const variableList = Array.isArray(variableListRaw)
-      ? variableListRaw
-          .filter(isObjectRecord)
-          .filter(
-            (
-              item,
-            ): item is {
-              key: string;
-              value?: unknown;
-            } => typeof item.key === "string",
-          )
-          .map((item) => ({
-            key: item.key,
-            value: item.value,
-          }))
-      : [];
-
-    return {
-      flow: parsed.flow,
-      variableList,
-    };
-  } catch {
-    return null;
-  }
-};
-
-const formatExecutionValue = (value: unknown): string => {
-  if (value === null) return "null";
-  if (typeof value === "boolean") return value ? "true" : "false";
-  if (typeof value === "string") return value;
-  if (typeof value === "number") return Number.isFinite(value) ? String(value) : "NaN";
-  if (typeof value === "undefined") return "undefined";
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
-};
-
-const getVisibleExecutionVariables = (
-  variables: WorkflowExecutionVariable[],
-): WorkflowExecutionVariable[] => {
-  return variables.filter((variable) => typeof variable.value !== "boolean");
-};
 
 const buildIncomingConnectionsIndex = (connections: Connection[]) => {
   const incomingByTo = new Map<string, string[]>();
@@ -110,9 +34,7 @@ const buildIncomingConnectionsIndex = (connections: Connection[]) => {
 const canVisitAncestor = (
   nodeId: string | undefined,
   visited: Set<string>,
-): nodeId is string => {
-  return !!nodeId && !visited.has(nodeId);
-};
+): nodeId is string => !!nodeId && !visited.has(nodeId);
 
 const enqueueUnvisitedParents = (
   nodeId: string,
@@ -125,6 +47,7 @@ const enqueueUnvisitedParents = (
     if (!visited.has(parentId)) stack.push(parentId);
   });
 };
+
 const collectAncestorNodeIds = (
   nodeId: string,
   incomingByTo: Map<string, string[]>,
@@ -136,7 +59,6 @@ const collectAncestorNodeIds = (
   while (stack.length > 0) {
     const currentId = stack.pop();
     if (!canVisitAncestor(currentId, visited)) continue;
-
     visited.add(currentId);
     resultIds.push(currentId);
     enqueueUnvisitedParents(currentId, incomingByTo, visited, stack);
@@ -148,37 +70,12 @@ const collectAncestorNodeIds = (
 const mapNodesToIncomingOptions = (
   nodeIds: string[],
   nodes: WorkflowNodeData[],
-): IncomingNodeOption[] => {
-  return nodeIds
+): IncomingNodeOption[] =>
+  nodeIds
     .map((id) => nodes.find((n) => n.id === id))
     .filter((n): n is NonNullable<typeof n> => !!n)
     .filter((n) => n.type !== "START")
     .map((n) => ({ id: n.id, name: n.title, type: n.type }));
-};
-
-const buildWorkflowModel = ({
-  workflowId,
-  workflowName,
-  nodes,
-  connections,
-}: {
-  workflowId: string;
-  workflowName: string | null;
-  nodes: WorkflowNodeData[];
-  connections: Connection[];
-}): WorkflowSerializationModel => ({
-  id: workflowId,
-  name: workflowName ?? `Workflow ${workflowId}`,
-  nodes,
-  connections,
-});
-
-const getWorkflowValidationMessages = (
-  nodes: WorkflowNodeData[],
-  connections: Connection[],
-) => {
-  return validateWorkflow({ nodes, connections }).map((error) => error.message);
-};
 
 const getIncomingNodeOptions = (
   selectedNode: WorkflowNodeData | null,
@@ -198,22 +95,15 @@ const getIncomingNodeOptions = (
  * pueden crear, conectar y configurar nodos de workflow.
  */
 export default function Canvas({ workflowId, actions }: CanvasProps) {
-  const isNodeTypeKey = (
-    type: (typeof NODE_TYPE_ARRAY)[number]["type"] | null,
-  ): type is keyof typeof NODE_TYPES => {
-    return !!type && type in NODE_TYPES;
-  };
   const { workflows } = useWorkflows();
   const workflowName =
-    workflows.find((workflow) => workflow.id === workflowId)?.name ?? null;
-  // Estado local para el contador de IDs
+    workflows.find((w) => w.id === workflowId)?.name ?? null;
+
   const [nextNodeId, setNextNodeId] = useState(1);
-  const [justCreatedNodeId, setJustCreatedNodeId] = useState<string | null>(
-    null,
-  );
+  const [justCreatedNodeId, setJustCreatedNodeId] = useState<string | null>(null);
+  const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
   const dropTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Estado principal del canvas
   const {
     nodes,
     connections,
@@ -233,30 +123,17 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     handleDuplicateNode,
   } = useCanvasState();
 
-  // Funciones memorizadas para localStorage
   const handleNodesLoaded = useCallback(
-    (loadedNodes: WorkflowNodeData[]) => {
-      setNodes(loadedNodes);
-    },
+    (loaded: WorkflowNodeData[]) => setNodes(loaded),
     [setNodes],
   );
-
   const handleConnectionsLoaded = useCallback(
-    (loadedConnections: Connection[]) => {
-      setConnections(loadedConnections);
-    },
+    (loaded: Connection[]) => setConnections(loaded),
     [setConnections],
   );
+  const handleNodeIdCounterUpdate = useCallback(() => {}, []);
+  const handleSetNextNodeId = useCallback((id: number) => setNextNodeId(id), []);
 
-  const handleNodeIdCounterUpdate = useCallback(() => {
-    // Actualizar el contador de nodos
-  }, []);
-
-  const handleSetNextNodeId = useCallback((id: number) => {
-    setNextNodeId(id);
-  }, []);
-
-  // Hook para persistencia en localStorage
   useLocalStorage({
     workflowId,
     nodes,
@@ -267,7 +144,6 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     onSetNextNodeId: handleSetNextNodeId,
   });
 
-  // Hook para manejo de drag and drop
   const {
     canvasRef,
     handleNodeMouseDown,
@@ -281,7 +157,6 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     onDragStateChange: setDragState,
   });
 
-  // Hook para manejo de conexiones
   const {
     handleStartConnection,
     handleCompleteConnection,
@@ -295,233 +170,76 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     onDragStateChange: setDragState,
   });
 
-  // Manejo personalizado del mouse up para crear nodos
+  const {
+    validationResult,
+    isValidationOpen,
+    setIsValidationOpen,
+    sendResult,
+    isSendOpen,
+    setIsSendOpen,
+    backendTerminalOutput,
+    isExecuting,
+    executionKey,
+    runWorkflowValidation,
+    handleDownloadJson,
+    handleExecuteWorkflow,
+  } = useWorkflowExecution({ workflowId, workflowName, nodes, connections });
+
   const handleCanvasMouseUpWithNodeCreation = (e: React.MouseEvent) => {
     const nodeType = dragState.newNodeType;
-
     if (nodeType && canvasRef.current) {
-      const canvasRect = canvasRef.current.getBoundingClientRect();
-      const x = e.clientX - canvasRect.left - CANVAS_CONFIG.NODE_WIDTH / 2;
-      const y = e.clientY - canvasRect.top - CANVAS_CONFIG.NODE_HEIGHT / 2;
-
+      const rect = canvasRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left - CANVAS_CONFIG.NODE_WIDTH / 2;
+      const y = e.clientY - rect.top - CANVAS_CONFIG.NODE_HEIGHT / 2;
       const newNode = createNode(nodeType, x, y, nextNodeId);
       setNodes([...nodes, newNode]);
       setSelectedNodeId(newNode.id);
       setNextNodeId(nextNodeId + 1);
       setJustCreatedNodeId(newNode.id);
-
-      if (dropTimeoutRef.current) {
-        clearTimeout(dropTimeoutRef.current);
-      }
-      dropTimeoutRef.current = setTimeout(() => {
-        setJustCreatedNodeId(null);
-      }, 180);
+      if (dropTimeoutRef.current) clearTimeout(dropTimeoutRef.current);
+      dropTimeoutRef.current = setTimeout(() => setJustCreatedNodeId(null), 180);
     }
-
     handleCanvasMouseUp(e, dragState);
   };
 
-  const [selectedConnectionId, setSelectedConnectionId] = useState<
-    string | null
-  >(null);
-  const [validationResult, setValidationResult] =
-    useState<ValidationDialogState>({ status: "idle", messages: [] });
-  const [isValidationOpen, setIsValidationOpen] = useState(false);
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [executionKey, setExecutionKey] = useState(0);
-  const [sendResult, setSendResult] = useState<SendDialogState>({
-    status: "idle",
-    message: "",
-  });
-  const [isSendOpen, setIsSendOpen] = useState(false);
-  const [backendTerminalOutput, setBackendTerminalOutput] =
-    useState<string>("");
-  const parsedExecutionOutput = parseExecutionOutput(backendTerminalOutput);
-  const visibleExecutionVariables = parsedExecutionOutput
-    ? getVisibleExecutionVariables(parsedExecutionOutput.variableList)
-    : [];
-
-  const incomingNodeOptions = getIncomingNodeOptions(
-    selectedNode,
-    nodes,
-    connections,
-  );
-
-  // Manejo de eliminación de nodo
   const handleDeleteNodeComplete = (nodeId: string) => {
     handleDeleteNode(nodeId);
     handleDeleteNodeWithConnections(nodeId, selectedNodeId, setSelectedNodeId);
-    if (selectedConnectionId) {
-      setSelectedConnectionId(null);
-    }
+    if (selectedConnectionId) setSelectedConnectionId(null);
   };
 
-  // Manejo de duplicación de nodo
   const handleDuplicateNodeComplete = (nodeId: string) => {
-    const newNodeId = `node-${nextNodeId}`;
-    handleDuplicateNode(nodeId, newNodeId);
+    handleDuplicateNode(nodeId, `node-${nextNodeId}`);
     setNextNodeId(nextNodeId + 1);
   };
 
   useEffect(() => {
     return () => {
-      if (dropTimeoutRef.current) {
-        clearTimeout(dropTimeoutRef.current);
-      }
+      if (dropTimeoutRef.current) clearTimeout(dropTimeoutRef.current);
     };
   }, []);
 
-  const handleDownloadJson = () => {
-    // Refactor: serialización y descarga delegadas a dominio + servicio.
-    const workflowModel = buildWorkflowModel({
-      workflowId,
-      workflowName,
-      nodes,
-      connections,
-    });
-    const payload = toExportWorkflow(workflowModel);
-    downloadWorkflowJson(payload, workflowModel.name);
-  };
-
-  const handleSendToBackend = async () => {
-    try {
-      // Refactor: mapeo backend y llamada de red aislados de la UI.
-      const workflowModel = buildWorkflowModel({
-        workflowId,
-        workflowName,
-        nodes,
-        connections,
-      });
-      const payload = toExportWorkflow(workflowModel);
-      let endpoint: string | undefined = undefined;
-      if (typeof window !== "undefined") {
-        try {
-          const raw = localStorage.getItem("backend-config");
-          if (raw) {
-            const parsed = JSON.parse(raw) as Partial<{
-              url: string;
-              port: string;
-            }>;
-            const url = typeof parsed.url === "string" ? parsed.url.trim() : "";
-            const port =
-              typeof parsed.port === "string" ? parsed.port.trim() : "";
-            if (url && port) {
-              endpoint = `http://${url}:${port}/api/workflows/run`;
-            }
-          }
-        } catch {
-          endpoint = undefined;
-        }
-      }
-
-      const result = await postWorkflow(payload, endpoint);
-
-      if (!result.ok) {
-        setBackendTerminalOutput(
-          result.bodyText || `Backend error: ${result.status}`,
-        );
-        throw new Error(`Backend error: ${result.status}`);
-      }
-
-      setBackendTerminalOutput(result.bodyText || "(sin contenido)");
-      addWorkflowExecutionToStorage({
-        id: `exec-${Date.now()}`,
-        workflowId,
-        executedAt: new Date().toISOString(),
-        status: "SUCCESS",
-        message: result.bodyText || "Workflow enviado correctamente.",
-      });
-      setSendResult({
-        status: "ok",
-        message: "Workflow enviado correctamente.",
-      });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Error desconocido.";
-      setBackendTerminalOutput(message);
-      addWorkflowExecutionToStorage({
-        id: `exec-${Date.now()}`,
-        workflowId,
-        executedAt: new Date().toISOString(),
-        status: "ERROR",
-        message,
-      });
-      setSendResult({ status: "error", message });
-    } finally {
-      setIsSendOpen(true);
-    }
-  };
-
-  const runWorkflowValidation = () => {
-    const errors = getWorkflowValidationMessages(nodes, connections);
-    if (errors.length === 0) {
-      setValidationResult({
-        status: "ok",
-        messages: ["Workflow válido. No se encontraron errores."],
-      });
-    } else {
-      setValidationResult({ status: "error", messages: errors });
-    }
-    setIsValidationOpen(true);
-  };
-
-  const handleExecuteWorkflow = () => {
-    const errors = getWorkflowValidationMessages(nodes, connections);
-    if (errors.length > 0) {
-      setValidationResult({ status: "error", messages: errors });
-      setIsValidationOpen(true);
-      return;
-    }
-
-    setIsExecuting(false);
-    setExecutionKey((prev) => prev + 1);
-    requestAnimationFrame(() => {
-      setIsExecuting(true);
-      window.setTimeout(() => setIsExecuting(false), 2200);
-    });
-    void handleSendToBackend();
-  };
-
-  const buildConnectionPath = (
-    fromNodeId: string,
-    toNodeId: string,
-    fromOffsetY?: number,
-  ) => {
-    const from = nodes.find((node) => node.id === fromNodeId);
-    const to = nodes.find((node) => node.id === toNodeId);
-    if (!from || !to) return null;
-
-    const startX = from.x + CANVAS_CONFIG.CONNECTION_OFFSET_X;
-    const startY = from.y + (fromOffsetY ?? CANVAS_CONFIG.CONNECTION_OFFSET_Y);
-    const endX = to.x;
-    const endY = to.y + CANVAS_CONFIG.CONNECTION_OFFSET_Y;
-    const controlX = (startX + endX) / 2;
-
-    return `M ${startX} ${startY} C ${controlX} ${startY}, ${controlX} ${endY}, ${endX} ${endY}`;
-  };
-
   useEffect(() => {
-    if (!dragState.isDragging || !dragState.newNodeType) {
-      return;
-    }
+    if (!dragState.isDragging || !dragState.newNodeType) return;
 
     const handleWindowMouseMove = (event: MouseEvent) => {
       setDragState((prev) => {
-        if (!prev.isDragging || !prev.newNodeType) {
-          return prev;
-        }
-        return {
-          ...prev,
-          cursorPosition: { x: event.clientX, y: event.clientY },
-        };
+        if (!prev.isDragging || !prev.newNodeType) return prev;
+        return { ...prev, cursorPosition: { x: event.clientX, y: event.clientY } };
       });
     };
 
     window.addEventListener("mousemove", handleWindowMouseMove);
-    return () => {
-      window.removeEventListener("mousemove", handleWindowMouseMove);
-    };
+    return () => window.removeEventListener("mousemove", handleWindowMouseMove);
   }, [dragState.isDragging, dragState.newNodeType, setDragState]);
+
+  const incomingNodeOptions = getIncomingNodeOptions(selectedNode, nodes, connections);
+
+  const canvasCursor = dragState.isDragging
+    ? "grabbing"
+    : dragState.isConnecting
+      ? "crosshair"
+      : "default";
 
   return (
     <div className="canvas-layout">
@@ -529,25 +247,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
       <div className="canvas-side canvas-side-offset">
         <aside className="canvas-panel">
           <h3 className="panel-title">Arrastrar nodos</h3>
-          <div className="node-palette">
-            {NODE_TYPE_ARRAY.map((nodeType) => (
-              <div
-                key={nodeType.type}
-                className={`draggable-node node node-${nodeType.type.toLowerCase()} ${
-                  dragState.isDragging &&
-                  dragState.newNodeType === nodeType.type
-                    ? "draggable-node-active"
-                    : ""
-                }`}
-                onMouseDown={(e) => handleNodeTypeDragStart(nodeType.type, e)}
-                style={{ cursor: "grab", marginBottom: "8px" }}
-              >
-                <span className="node-title" style={{ fontSize: "0.9rem" }}>
-                  {nodeType.label}
-                </span>
-              </div>
-            ))}
-          </div>
+          <NodePalette dragState={dragState} onDragStart={handleNodeTypeDragStart} />
         </aside>
 
         <aside className="canvas-panel canvas-panel-compact">
@@ -589,13 +289,7 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
           }
           onClick={dragState.isConnecting ? handleCancelConnection : undefined}
           onMouseDown={() => setSelectedConnectionId(null)}
-          style={{
-            cursor: dragState.isDragging
-              ? "grabbing"
-              : dragState.isConnecting
-                ? "crosshair"
-                : "default",
-          }}
+          style={{ cursor: canvasCursor }}
         >
           <div
             className="canvas-grid"
@@ -605,67 +299,17 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
               height: CANVAS_CONFIG.BASE_CANVAS_HEIGHT,
             }}
           >
-            {/* SVG para conexiones */}
-            <svg className="canvas-connections">
-              <defs>
-                <marker
-                  id="arrowhead"
-                  markerWidth="10"
-                  markerHeight="10"
-                  refX="6"
-                  refY="3"
-                  orient="auto"
-                >
-                  <path d="M 0 0 L 6 3 L 0 6" className="connection-arrow" />
-                </marker>
-              </defs>
+            <CanvasConnectionsLayer
+              connections={connections}
+              nodes={nodes}
+              dragState={dragState}
+              selectedConnectionId={selectedConnectionId}
+              onSelectConnection={(id) => {
+                setSelectedConnectionId(id);
+                setSelectedNodeId(null);
+              }}
+            />
 
-              {/* Línea temporal durante conexión */}
-              {dragState.isConnecting && dragState.tempConnection && (
-                <line
-                  x1={
-                    (nodes.find((n) => n.id === dragState.connectionStart)?.x ??
-                      0) + CANVAS_CONFIG.CONNECTION_OFFSET_X
-                  }
-                  y1={
-                    (nodes.find((n) => n.id === dragState.connectionStart)?.y ??
-                      0) +
-                    (dragState.connectionStartOffsetY ??
-                      CANVAS_CONFIG.CONNECTION_OFFSET_Y)
-                  }
-                  x2={dragState.tempConnection.x}
-                  y2={dragState.tempConnection.y}
-                  stroke="#9e8bff"
-                  strokeWidth="2"
-                  strokeDasharray="5,5"
-                  opacity="0.6"
-                />
-              )}
-
-              {/* Conexiones existentes */}
-              {connections.map((connection) => {
-                const from = nodes.find((node) => node.id === connection.from);
-                const to = nodes.find((node) => node.id === connection.to);
-                if (!from || !to) return null;
-
-                return (
-                  <WorkflowConnection
-                    key={connection.id}
-                    id={connection.id}
-                    from={from}
-                    to={to}
-                    fromOffsetY={connection.fromOffsetY}
-                    isSelected={selectedConnectionId === connection.id}
-                    onSelect={(id) => {
-                      setSelectedConnectionId(id);
-                      setSelectedNodeId(null);
-                    }}
-                  />
-                );
-              })}
-            </svg>
-
-            {/* Mensaje cuando el canvas está vacío */}
             {nodes.length === 0 && (
               <div
                 className="canvas-empty"
@@ -683,7 +327,6 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
               </div>
             )}
 
-            {/* Renderizado de nodos */}
             {nodes.map((node) => (
               <WorkflowNode
                 key={node.id}
@@ -713,141 +356,35 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
                   handleCompleteConnection(nodeId, dragState)
                 }
                 isConnectionTarget={
-                  dragState.isConnecting &&
-                  dragState.connectionStart !== node.id
+                  dragState.isConnecting && dragState.connectionStart !== node.id
                 }
                 isConnectionSource={dragState.connectionStart === node.id}
               />
             ))}
 
-            {isExecuting && (
-              <svg
-                className="canvas-connections execution-layer"
-                key={executionKey}
-              >
-                {connections.map((connection, index) => {
-                  const path = buildConnectionPath(
-                    connection.from,
-                    connection.to,
-                    connection.fromOffsetY,
-                  );
-                  if (!path) return null;
-                  return (
-                    <g key={`exec-${connection.id}`}>
-                      <path d={path} fill="none" stroke="none" />
-                      <circle className="execution-dot" r="4">
-                        <animateMotion
-                          dur="1.2s"
-                          begin={`${index * 0.2}s`}
-                          path={path}
-                          repeatCount="1"
-                          fill="freeze"
-                        />
-                      </circle>
-                    </g>
-                  );
-                })}
-              </svg>
-            )}
+            <ExecutionLayer
+              connections={connections}
+              nodes={nodes}
+              isExecuting={isExecuting}
+              executionKey={executionKey}
+            />
           </div>
         </div>
       </section>
 
       {/* Panel derecho - Detalles del nodo */}
-      <aside className="canvas-panel canvas-panel-right canvas-panel-offset">
-        <h3 className="panel-title">Detalle del nodo</h3>
-        {selectedNode ? (
-          <div className="panel-card">
-            <p className="panel-label">Título</p>
-            <p className="panel-value">{selectedNode.title}</p>
-
-            <p className="panel-label">Tipo</p>
-            <p className="panel-value">{selectedNode.type}</p>
-
-            <p className="panel-label">Posición</p>
-            <p className="panel-value">
-              X: {Math.round(selectedNode.x)}, Y: {Math.round(selectedNode.y)}
-            </p>
-
-            <div className="panel-section" style={{ marginTop: "16px" }}>
-              <h4 className="panel-title">Conexiones</h4>
-              <div style={{ fontSize: "12px" }}>
-                <p>
-                  Salidas:{" "}
-                  {connections.filter((c) => c.from === selectedNode.id).length}
-                </p>
-                <p>
-                  Entradas:{" "}
-                  {connections.filter((c) => c.to === selectedNode.id).length}
-                </p>
-              </div>
-              <button
-                className="btn-secondary"
-                style={{ marginTop: "8px", width: "100%", fontSize: "12px" }}
-                onClick={handleOpenConfig}
-              >
-                ⚙️ Configurar Nodo
-              </button>
-            </div>
-
-            {selectedNode.type !== "START" && (
-              <button
-                className="btn-primary"
-                style={{ marginTop: "12px", width: "100%" }}
-                onClick={() => handleDuplicateNodeComplete(selectedNode.id)}
-              >
-                Duplicar nodo
-              </button>
-            )}
-            <button
-              className="btn-primary btn-danger"
-              style={{ marginTop: "12px", width: "100%" }}
-              onClick={() => handleDeleteNodeComplete(selectedNode.id)}
-            >
-              Eliminar nodo
-            </button>
-          </div>
-        ) : selectedConnectionId ? (
-          <div className="panel-card">
-            <p className="panel-label">Conexión seleccionada</p>
-            <p className="panel-value">ID: {selectedConnectionId}</p>
-            <button
-              className="btn-secondary btn-danger"
-              style={{ marginTop: "12px", width: "100%" }}
-              onClick={() => {
-                handleDeleteConnection(selectedConnectionId);
-                setSelectedConnectionId(null);
-              }}
-            >
-              Eliminar conexión
-            </button>
-          </div>
-        ) : (
-          <p className="panel-empty">Selecciona un nodo para ver detalles.</p>
-        )}
-
-        <div className="panel-card" style={{ marginTop: "12px" }}>
-          <p className="panel-label">Ejecutar</p>
-          <button
-            className="btn-primary"
-            style={{ width: "100%" }}
-            onClick={handleExecuteWorkflow}
-          >
-            Ejecutar
-          </button>
-        </div>
-
-        <div className="panel-card" style={{ marginTop: "12px" }}>
-          <p className="panel-label">Validar workflow</p>
-          <button
-            className="btn-primary"
-            style={{ width: "100%" }}
-            onClick={runWorkflowValidation}
-          >
-            Validar Workflow
-          </button>
-        </div>
-      </aside>
+      <NodeDetailPanel
+        selectedNode={selectedNode}
+        selectedConnectionId={selectedConnectionId}
+        connections={connections}
+        onOpenConfig={handleOpenConfig}
+        onDuplicate={handleDuplicateNodeComplete}
+        onDelete={handleDeleteNodeComplete}
+        onDeleteConnection={handleDeleteConnection}
+        onDeselectConnection={() => setSelectedConnectionId(null)}
+        onExecute={handleExecuteWorkflow}
+        onValidate={runWorkflowValidation}
+      />
 
       {/* Panel de configuración */}
       <NodeConfigPanel
@@ -858,33 +395,14 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
         incomingNodeOptions={incomingNodeOptions}
       />
 
-      {dragState.isDragging &&
-        isNodeTypeKey(dragState.newNodeType) &&
-        dragState.cursorPosition && (
-          <div
-            className={`node node-drag-preview node-${dragState.newNodeType.toLowerCase()}`}
-            style={{
-              position: "fixed",
-              left: dragState.cursorPosition.x - CANVAS_CONFIG.NODE_WIDTH / 2,
-              top: dragState.cursorPosition.y - CANVAS_CONFIG.NODE_HEIGHT / 2,
-              pointerEvents: "none",
-            }}
-          >
-            <span className="node-title">
-              {NODE_TYPES[dragState.newNodeType].label}
-            </span>
-            <span className="node-type">{dragState.newNodeType}</span>
-          </div>
-        )}
+      <DragPreview dragState={dragState} />
 
       <StatusModal
         isOpen={isValidationOpen && validationResult.status !== "idle"}
         title="Validacion de workflow"
         status={validationResult.status === "idle" ? undefined : validationResult.status}
         message={
-          validationResult.status === "ok"
-            ? validationResult.messages[0]
-            : undefined
+          validationResult.status === "ok" ? validationResult.messages[0] : undefined
         }
         introText={
           validationResult.status === "error"
@@ -904,50 +422,15 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
         message={sendResult.message}
         onClose={() => setIsSendOpen(false)}
       >
-        {parsedExecutionOutput ? (
-          <section className="execution-output" aria-label="Resultado de ejecucion">
-            <div className="execution-summary-grid">
-              <article className="execution-summary-card">
-                <p className="execution-summary-label">Estado del flujo</p>
-                <p className="execution-summary-value">
-                  {parsedExecutionOutput.flow === null ? "No retornado" : "Disponible"}
-                </p>
-              </article>
-              <article className="execution-summary-card">
-                <p className="execution-summary-label">Variables recibidas</p>
-                <p className="execution-summary-value">
-                  {visibleExecutionVariables.length}
-                </p>
-              </article>
-            </div>
-
-            {visibleExecutionVariables.length > 0 ? (
-              <div className="execution-variables">
-                <p className="execution-summary-label">Variables</p>
-                <ul className="execution-variables-list">
-                  {visibleExecutionVariables.map((variable) => (
-                    <li key={variable.key} className="execution-variable-item">
-                      <span className="execution-variable-key">{variable.key}</span>
-                      <span className="execution-variable-value">
-                        {formatExecutionValue(variable.value)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </section>
-        ) : (
-          <div className="form-group" style={{ marginTop: "14px" }}>
-            <label className="form-label">Terminal de salida</label>
-            <textarea
-              className="form-textarea"
-              value={backendTerminalOutput}
-              readOnly
-              rows={10}
-            />
-          </div>
-        )}
+        <div className="form-group" style={{ marginTop: "14px" }}>
+          <label className="form-label">Terminal de salida</label>
+          <textarea
+            className="form-textarea"
+            value={backendTerminalOutput}
+            readOnly
+            rows={10}
+          />
+        </div>
       </StatusModal>
     </div>
   );

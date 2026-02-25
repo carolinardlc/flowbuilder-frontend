@@ -4,6 +4,7 @@
 
 import type { WorkflowNodeData, WorkflowNodeType } from "../types";
 import { NODE_TYPES } from "../constants/nodeTypes";
+import { CANVAS_CONFIG } from "../constants/storage";
 
 /**
  * Crea un nuevo nodo con valores por defecto
@@ -65,6 +66,28 @@ export const calculateNextNodeId = (nodes: WorkflowNodeData[]): number => {
       .reduce((a, b) => Math.max(a, b), 0) || 0;
 
   return maxNum + 1;
+};
+
+/**
+ * Construye el path SVG de una conexión entre dos nodos
+ */
+export const buildConnectionPath = (
+  fromNodeId: string,
+  toNodeId: string,
+  nodes: WorkflowNodeData[],
+  fromOffsetY?: number,
+): string | null => {
+  const from = nodes.find((node) => node.id === fromNodeId);
+  const to = nodes.find((node) => node.id === toNodeId);
+  if (!from || !to) return null;
+
+  const startX = from.x + CANVAS_CONFIG.CONNECTION_OFFSET_X;
+  const startY = from.y + (fromOffsetY ?? CANVAS_CONFIG.CONNECTION_OFFSET_Y);
+  const endX = to.x;
+  const endY = to.y + CANVAS_CONFIG.CONNECTION_OFFSET_Y;
+  const controlX = (startX + endX) / 2;
+
+  return `M ${startX} ${startY} C ${controlX} ${startY}, ${controlX} ${endY}, ${endX} ${endY}`;
 };
 
 /**

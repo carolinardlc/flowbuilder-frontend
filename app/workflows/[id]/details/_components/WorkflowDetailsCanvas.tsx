@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { EMPTY_WORKFLOW_CANVAS_SNAPSHOT, loadWorkflowCanvasSnapshot } from "../../../../services/workflowCanvasStorage";
-import WorkflowConnection from "../../canvas/WorkflowConnection";
-import WorkflowNode from "../../canvas/WorkflowNode";
 import type {
   Connection,
   WorkflowNodeData,
@@ -112,10 +110,9 @@ export default function WorkflowDetailsCanvas({
     <section className="details-canvas">
       <div className="details-canvas-header">
         <div>
-          <p className="hero-kicker">Resumen visual</p>
-          <h2 className="workflows-title">Canvas (solo lectura)</h2>
+          <p className="hero-kicker">Resumen</p>
+          <h2 className="workflows-title">Estadísticas del workflow</h2>
         </div>
-        <span className="canvas-badge">Solo lectura</span>
       </div>
 
       <div className="details-canvas-summary">
@@ -137,55 +134,6 @@ export default function WorkflowDetailsCanvas({
         )}
       </div>
 
-      <div className="canvas-scroll canvas-scroll--readonly">
-        <div className="canvas-grid canvas-grid--readonly">
-          <svg className="canvas-connections" viewBox="0 0 1600 800">
-            <defs>
-              <marker
-                id="arrowhead"
-                markerWidth="10"
-                markerHeight="10"
-                refX="6"
-                refY="3"
-                orient="auto"
-              >
-                <path d="M 0 0 L 6 3 L 0 6" className="connection-arrow" />
-              </marker>
-            </defs>
-
-            {visibleConnections.map((connection) => {
-              const from = nodeById.get(connection.from);
-              const to = nodeById.get(connection.to);
-              if (!from || !to) return null;
-
-              return (
-                <WorkflowConnection
-                  key={connection.id}
-                  id={connection.id}
-                  from={from}
-                  to={to}
-                />
-              );
-            })}
-          </svg>
-
-          {normalizedNodes.length === 0 && (
-            <div className="canvas-empty">
-              No hay nodos guardados para este workflow.
-            </div>
-          )}
-
-          {normalizedNodes.map((node) => (
-            <WorkflowNode
-              key={node.id}
-              node={node}
-              selected={false}
-              onSelect={() => {}}
-              readOnly
-            />
-          ))}
-        </div>
-      </div>
     </section>
   );
 }

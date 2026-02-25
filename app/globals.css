@@ -100,7 +100,7 @@ body {
 .app-main--wide {
   max-width: 100%;
   width: 100%;
-  padding: 1rem 1rem 2rem;
+  padding: 0.5rem;
 }
 
 .app-card {
@@ -114,6 +114,7 @@ body {
   max-width: 100%;
   width: 100%;
   padding: 1rem;
+  min-height: calc(100vh - 7rem);
 }
 
 .hero {
