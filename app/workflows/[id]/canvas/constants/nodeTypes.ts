@@ -37,14 +37,6 @@ export const NODE_TYPES = {
     label: "HTTP Request",
     description: "Solicitud HTTP externa",
   },
-  END: {
-    type: "END" as WorkflowNodeType,
-    color: "#d4d4d4",
-    bgColor: "rgba(212, 212, 212, 0.6)",
-    icon: "🏁",
-    label: "Fin",
-    description: "Marca el final del workflow",
-  },
 } as const;
 
 export const NODE_TYPE_ARRAY = Object.values(NODE_TYPES);

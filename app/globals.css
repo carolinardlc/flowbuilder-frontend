@@ -416,7 +416,7 @@ body {
 
 .canvas-layout {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 280px;
+  grid-template-columns: 220px minmax(0, 1fr) 220px;
   gap: 1rem;
   align-items: stretch;
   align-content: start;
@@ -449,7 +449,7 @@ body {
   flex-direction: column;
   gap: 0.8rem;
   align-self: start;
-  width: 240px;
+  width: 210px;
   justify-self: end;
   margin-left: auto;
 }
