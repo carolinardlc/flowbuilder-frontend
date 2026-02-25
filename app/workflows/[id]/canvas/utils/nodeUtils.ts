@@ -14,7 +14,9 @@ export const createNode = (
   y: number,
   idCounter: number,
 ): WorkflowNodeData => {
-  const label = NODE_TYPES[type]?.label ?? type;
+  const nodeTypeInfo =
+    type in NODE_TYPES ? NODE_TYPES[type as keyof typeof NODE_TYPES] : undefined;
+  const label = nodeTypeInfo?.label ?? type;
   return {
     id: `node-${idCounter}`,
     title: `${label}`,
@@ -48,7 +50,8 @@ export const findNode = (
  * Obtiene información de un tipo de nodo
  */
 export const getNodeTypeInfo = (type: WorkflowNodeType) => {
-  return NODE_TYPES[type];
+  if (!(type in NODE_TYPES)) return undefined;
+  return NODE_TYPES[type as keyof typeof NODE_TYPES];
 };
 
 /**
