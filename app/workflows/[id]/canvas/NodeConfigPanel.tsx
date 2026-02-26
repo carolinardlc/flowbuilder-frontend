@@ -13,6 +13,17 @@ type NodeConfigPanelProps = {
   incomingNodeOptions?: { id: string; name: string; type: string }[];
 };
 
+const useKeyboardClose = (isOpen: boolean, onClose: () => void) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [isOpen, onClose]);
+};
+
 const buildNodeConfigState = (node: WorkflowNodeData | null): NodeConfig => {
   if (!node) {
     return {
@@ -88,20 +99,7 @@ export default function NodeConfigPanel({
     }
   }, [node]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, onClose]);
+  useKeyboardClose(isOpen, onClose);
 
   const updateConfig = useCallback(
     <K extends keyof NodeConfig>(field: K, value: NodeConfig[K]) => {

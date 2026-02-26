@@ -17,6 +17,89 @@ type WorkflowNodeProps = {
   isJustCreated?: boolean;
 };
 
+type NodeHandlesProps = {
+  nodeId: string;
+  nodeType: WorkflowNodeType;
+  isConnectionTarget: boolean;
+  onStartConnection?: (id: string, offsetY?: number) => void;
+  onCompleteConnection?: (id: string) => void;
+};
+
+function NodeHandles({
+  nodeId,
+  nodeType,
+  isConnectionTarget,
+  onStartConnection,
+  onCompleteConnection,
+}: NodeHandlesProps) {
+  const handleStartConnection = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onStartConnection?.(nodeId);
+  };
+
+  const handleStartConnectionTop = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onStartConnection?.(nodeId, 24);
+  };
+
+  const handleStartConnectionBottom = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onStartConnection?.(nodeId, 56);
+  };
+
+  const handleCompleteConnection = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onCompleteConnection?.(nodeId);
+  };
+
+  return (
+    <>
+      <div
+        className="node-handle node-handle-in"
+        onMouseUp={handleCompleteConnection}
+        title="Soltar conexión aquí"
+      />
+      {nodeType === "CONDITIONAL" ? (
+        <>
+          <div
+            className="node-handle node-handle-out node-handle-out-top"
+            onMouseDown={handleStartConnectionTop}
+            title="Arrastrar para conectar (ruta 1)"
+          />
+          <span className="node-handle-label node-handle-label-true">TRUE</span>
+          <div
+            className="node-handle node-handle-out node-handle-out-bottom"
+            onMouseDown={handleStartConnectionBottom}
+            title="Arrastrar para conectar (ruta 2)"
+          />
+          <span className="node-handle-label node-handle-label-false">FALSE</span>
+        </>
+      ) : (
+        <div
+          className="node-handle node-handle-out"
+          onMouseDown={handleStartConnection}
+          title="Arrastrar para conectar"
+        />
+      )}
+      {isConnectionTarget && (
+        <div
+          className="connection-hint"
+          style={{
+            position: "absolute",
+            left: 85,
+            top: 15,
+            fontSize: "10px",
+            color: "#9e8bff",
+            pointerEvents: "none",
+          }}
+        >
+          📍
+        </div>
+      )}
+    </>
+  );
+}
+
 /**
  * Componente visual para un nodo de workflow
  *
@@ -38,26 +121,6 @@ export default function WorkflowNode({
   isDragging = false,
   isJustCreated = false,
 }: WorkflowNodeProps) {
-  const handleStartConnection = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onStartConnection?.(node.id);
-  };
-
-  const handleStartConnectionTop = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onStartConnection?.(node.id, 24);
-  };
-
-  const handleStartConnectionBottom = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onStartConnection?.(node.id, 56);
-  };
-
-  const handleCompleteConnection = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onCompleteConnection?.(node.id);
-  };
-
   const buttonClasses = [
     getNodeClass(node.type),
     selected ? "node-selected" : "",
@@ -102,54 +165,13 @@ export default function WorkflowNode({
         <span className="node-type">{node.type}</span>
       </button>
       {!readOnly && (
-        <>
-          <div
-            className="node-handle node-handle-in"
-            onMouseUp={handleCompleteConnection}
-            title="Soltar conexión aquí"
-          />
-          {node.type === "CONDITIONAL" ? (
-            <>
-              <div
-                className="node-handle node-handle-out node-handle-out-top"
-                onMouseDown={handleStartConnectionTop}
-                title="Arrastrar para conectar (ruta 1)"
-              />
-              <span className="node-handle-label node-handle-label-true">
-                TRUE
-              </span>
-              <div
-                className="node-handle node-handle-out node-handle-out-bottom"
-                onMouseDown={handleStartConnectionBottom}
-                title="Arrastrar para conectar (ruta 2)"
-              />
-              <span className="node-handle-label node-handle-label-false">
-                FALSE
-              </span>
-            </>
-          ) : (
-            <div
-              className="node-handle node-handle-out"
-              onMouseDown={handleStartConnection}
-              title="Arrastrar para conectar"
-            />
-          )}
-        </>
-      )}
-      {isConnectionTarget && (
-        <div
-          className="connection-hint"
-          style={{
-            position: "absolute",
-            left: 85,
-            top: 15,
-            fontSize: "10px",
-            color: "#9e8bff",
-            pointerEvents: "none",
-          }}
-        >
-          📍
-        </div>
+        <NodeHandles
+          nodeId={node.id}
+          nodeType={node.type}
+          isConnectionTarget={isConnectionTarget ?? false}
+          onStartConnection={onStartConnection}
+          onCompleteConnection={onCompleteConnection}
+        />
       )}
     </div>
   );

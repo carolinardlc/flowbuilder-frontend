@@ -41,18 +41,21 @@ const EMPTY_COUNTS: Record<WorkflowNodeType, number> = {
   HTTP_REQUEST: 0,
 };
 
-const normalizeLegacyType = (type: WorkflowNodeType | LegacyWorkflowNodeType) => {
-  if (type === "ACTION") return "COMMAND" as const;
-  if (type === "HTTP") return "HTTP_REQUEST" as const;
-  return type;
+const LEGACY_TYPE_MAP: Partial<Record<string, WorkflowNodeType>> = {
+  ACTION: "COMMAND",
+  HTTP: "HTTP_REQUEST",
 };
 
+const normalizeLegacyType = (
+  type: WorkflowNodeType | LegacyWorkflowNodeType,
+): WorkflowNodeType => (LEGACY_TYPE_MAP[type] ?? type) as WorkflowNodeType;
+
 const buildNodeTypeSummary = (nodes: DetailsCanvasNode[]) => {
-  return nodes.reduce<Record<WorkflowNodeType, number>>((acc, node) => {
-    const normalizedType = normalizeLegacyType(node.type);
-    acc[normalizedType] = (acc[normalizedType] ?? 0) + 1;
-    return acc;
-  }, { ...EMPTY_COUNTS });
+  const counts = { ...EMPTY_COUNTS };
+  for (const node of nodes) {
+    counts[normalizeLegacyType(node.type)] += 1;
+  }
+  return counts;
 };
 
 const normalizeSnapshotForDetails = (

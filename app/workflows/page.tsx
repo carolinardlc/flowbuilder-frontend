@@ -79,6 +79,225 @@ const formatExecutionValue = (value: unknown): string => {
   }
 };
 
+const formatExecutionDate = (value: string): string => {
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) return value;
+  return parsedDate.toLocaleString("es-ES");
+};
+
+// ─────────────────── sub-components ───────────────────
+
+type ExecutionDetailModalProps = {
+  execution: WorkflowExecutionRecord;
+  workflowNameById: Record<string, string>;
+  onClose: () => void;
+};
+
+function ExecutionDetailModal({
+  execution,
+  workflowNameById,
+  onClose,
+}: ExecutionDetailModalProps) {
+  const output = parseExecutionOutput(execution.message);
+  const variables = output ? getVisibleExecutionVariables(output.variableList) : [];
+
+  return (
+    <div className="modal-overlay" role="dialog" aria-modal="true">
+      <div className="modal-card execution-detail-modal">
+        <h2 className="workflows-title">Detalle de ejecucion</h2>
+        <div className="form-group">
+          <p className="panel-label">Execution ID</p>
+          <p className="panel-value">{execution.id}</p>
+        </div>
+        <div className="form-group">
+          <p className="panel-label">Workflow</p>
+          <p className="panel-value">
+            {workflowNameById[execution.workflowId] ?? execution.workflowId}
+          </p>
+        </div>
+        <div className="form-group">
+          <p className="panel-label">Fecha</p>
+          <p className="panel-value">{formatExecutionDate(execution.executedAt)}</p>
+        </div>
+        <div className="form-group">
+          <p className="panel-label">Estado</p>
+          <p className="panel-value">
+            {execution.status === "SUCCESS" ? "OK" : "ERROR"}
+          </p>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Salida completa</label>
+          {output ? (
+            <section
+              className="execution-output"
+              aria-label="Resultado detallado de ejecucion"
+            >
+              <div className="execution-summary-grid">
+                <article className="execution-summary-card">
+                  <p className="execution-summary-label">Estado del flujo</p>
+                  <p className="execution-summary-value">
+                    {output.flow === null ? "No retornado" : "Disponible"}
+                  </p>
+                </article>
+                <article className="execution-summary-card">
+                  <p className="execution-summary-label">Variables recibidas</p>
+                  <p className="execution-summary-value">{variables.length}</p>
+                </article>
+              </div>
+              {variables.length > 0 ? (
+                <div className="execution-variables">
+                  <p className="execution-summary-label">Variables</p>
+                  <ul className="execution-variables-list">
+                    {variables.map((variable) => (
+                      <li key={variable.key} className="execution-variable-item">
+                        <span className="execution-variable-key">{variable.key}</span>
+                        <span className="execution-variable-value">
+                          {formatExecutionValue(variable.value)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </section>
+          ) : (
+            <textarea
+              className="form-textarea"
+              rows={10}
+              readOnly
+              value={execution.message}
+            />
+          )}
+        </div>
+        <div className="form-actions">
+          <button type="button" className="btn-secondary" onClick={onClose}>
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type WorkflowCardProps = {
+  workflow: { id: string; name: string; description: string; status: keyof typeof statusStyles; date: string };
+  executions: WorkflowExecutionRecord[];
+  isExpanded: boolean;
+  onToggle: () => void;
+  onSelectExecution: (execution: WorkflowExecutionRecord) => void;
+  onDeleteClick: () => void;
+};
+
+function WorkflowCard({
+  workflow,
+  executions,
+  isExpanded,
+  onToggle,
+  onSelectExecution,
+  onDeleteClick,
+}: WorkflowCardProps) {
+  const status = statusStyles[workflow.status];
+
+  return (
+    <article key={workflow.id} className="workflow-card">
+      <div className="workflow-content">
+        <h2 className="workflow-title">{workflow.name}</h2>
+        <p className="workflow-description">{workflow.description}</p>
+      </div>
+      <div className="workflow-meta-row">
+        <span className={status.className}>{status.label}</span>
+        <span className="workflow-updated">Actualizado: {workflow.date}</span>
+      </div>
+      <div className="workflow-actions">
+        <Link
+          href={`/workflows/${workflow.id}`}
+          className="btn-secondary link-button"
+        >
+          Abrir
+        </Link>
+        <Link
+          href={`/workflows/${workflow.id}/edit`}
+          className="btn-secondary link-button"
+        >
+          Editar
+        </Link>
+        <button
+          type="button"
+          className="btn-secondary btn-danger"
+          onClick={onDeleteClick}
+        >
+          Eliminar
+        </button>
+      </div>
+      <div className="panel-card" style={{ marginTop: "10px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
+          <p className="panel-label" style={{ margin: 0 }}>
+            Ejecuciones ({executions.length})
+          </p>
+          <button
+            type="button"
+            className="btn-secondary"
+            style={{ fontSize: "12px", padding: "6px 10px" }}
+            onClick={onToggle}
+          >
+            {isExpanded ? "Ocultar" : "Ver"}
+          </button>
+        </div>
+        {isExpanded &&
+          (executions.length === 0 ? (
+            <p className="panel-empty" style={{ marginTop: "8px" }}>
+              Sin ejecuciones registradas.
+            </p>
+          ) : (
+            <ul
+              style={{
+                marginTop: "8px",
+                marginBottom: 0,
+                paddingLeft: "18px",
+              }}
+            >
+              {executions.slice(0, 5).map((execution) => (
+                <li
+                  key={execution.id}
+                  style={{
+                    fontSize: "12px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "8px",
+                    marginBottom: "4px",
+                  }}
+                >
+                  <span>
+                    {formatExecutionDate(execution.executedAt)} -{" "}
+                    {execution.status === "SUCCESS" ? "OK" : "ERROR"}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{ fontSize: "11px", padding: "4px 8px" }}
+                    onClick={() => onSelectExecution(execution)}
+                  >
+                    Ver detalle
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ))}
+      </div>
+    </article>
+  );
+}
+
+// ─────────────────── page component ───────────────────
+
 export default function WorkflowsPage() {
   const { workflows, deleteWorkflow } = useWorkflows();
   const [executions, setExecutions] = useState<WorkflowExecutionRecord[]>([]);
@@ -119,24 +338,12 @@ export default function WorkflowsPage() {
     );
   }, [executions]);
 
-  const formatExecutionDate = (value: string) => {
-    const parsedDate = new Date(value);
-    if (Number.isNaN(parsedDate.getTime())) return value;
-    return parsedDate.toLocaleString("es-ES");
-  };
-
   const workflowNameById = useMemo(() => {
     return workflows.reduce<Record<string, string>>((acc, workflow) => {
       acc[workflow.id] = workflow.name;
       return acc;
     }, {});
   }, [workflows]);
-  const selectedExecutionOutput = selectedExecution
-    ? parseExecutionOutput(selectedExecution.message)
-    : null;
-  const selectedExecutionVariables = selectedExecutionOutput
-    ? getVisibleExecutionVariables(selectedExecutionOutput.variableList)
-    : [];
 
   return (
     <Layout>
@@ -156,117 +363,24 @@ export default function WorkflowsPage() {
         </div>
 
         <div className="workflows-grid">
-          {workflows.map((workflow) => {
-            const status = statusStyles[workflow.status];
-            const workflowExecutions = executionsByWorkflow[workflow.id] ?? [];
-            return (
-              <article key={workflow.id} className="workflow-card">
-                <div className="workflow-content">
-                  <h2 className="workflow-title">{workflow.name}</h2>
-                  <p className="workflow-description">{workflow.description}</p>
-                </div>
-                <div className="workflow-meta-row">
-                  <span className={status.className}>{status.label}</span>
-                  <span className="workflow-updated">
-                    Actualizado: {workflow.date}
-                  </span>
-                </div>
-                <div className="workflow-actions">
-                  <Link
-                    href={`/workflows/${workflow.id}`}
-                    className="btn-secondary link-button"
-                  >
-                    Abrir
-                  </Link>
-                  <Link
-                    href={`/workflows/${workflow.id}/edit`}
-                    className="btn-secondary link-button"
-                  >
-                    Editar
-                  </Link>
-                  <button
-                    type="button"
-                    className="btn-secondary btn-danger"
-                    onClick={() =>
-                      setWorkflowToDelete({ id: workflow.id, name: workflow.name })
-                    }
-                  >
-                    Eliminar
-                  </button>
-                </div>
-                <div className="panel-card" style={{ marginTop: "10px" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      gap: "10px",
-                    }}
-                  >
-                    <p className="panel-label" style={{ margin: 0 }}>
-                    Ejecuciones ({workflowExecutions.length})
-                    </p>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      style={{ fontSize: "12px", padding: "6px 10px" }}
-                      onClick={() =>
-                        setExpandedExecutionWorkflows((prev) => ({
-                          ...prev,
-                          [workflow.id]: !prev[workflow.id],
-                        }))
-                      }
-                    >
-                      {expandedExecutionWorkflows[workflow.id]
-                        ? "Ocultar"
-                        : "Ver"}
-                    </button>
-                  </div>
-                  {expandedExecutionWorkflows[workflow.id] &&
-                    (workflowExecutions.length === 0 ? (
-                      <p className="panel-empty" style={{ marginTop: "8px" }}>
-                        Sin ejecuciones registradas.
-                      </p>
-                    ) : (
-                      <ul
-                        style={{
-                          marginTop: "8px",
-                          marginBottom: 0,
-                          paddingLeft: "18px",
-                        }}
-                      >
-                        {workflowExecutions.slice(0, 5).map((execution) => (
-                          <li
-                            key={execution.id}
-                            style={{
-                              fontSize: "12px",
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              gap: "8px",
-                              marginBottom: "4px",
-                            }}
-                          >
-                            <span>
-                              {formatExecutionDate(execution.executedAt)} -{" "}
-                              {execution.status === "SUCCESS" ? "OK" : "ERROR"}
-                            </span>
-                            <button
-                              type="button"
-                              className="btn-secondary"
-                              style={{ fontSize: "11px", padding: "4px 8px" }}
-                              onClick={() => setSelectedExecution(execution)}
-                            >
-                              Ver detalle
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    ))}
-                </div>
-              </article>
-            );
-          })}
+          {workflows.map((workflow) => (
+            <WorkflowCard
+              key={workflow.id}
+              workflow={workflow}
+              executions={executionsByWorkflow[workflow.id] ?? []}
+              isExpanded={expandedExecutionWorkflows[workflow.id] ?? false}
+              onToggle={() =>
+                setExpandedExecutionWorkflows((prev) => ({
+                  ...prev,
+                  [workflow.id]: !prev[workflow.id],
+                }))
+              }
+              onSelectExecution={setSelectedExecution}
+              onDeleteClick={() =>
+                setWorkflowToDelete({ id: workflow.id, name: workflow.name })
+              }
+            />
+          ))}
         </div>
 
         <ConfirmModal
@@ -287,91 +401,11 @@ export default function WorkflowsPage() {
         />
 
         {selectedExecution && (
-          <div className="modal-overlay" role="dialog" aria-modal="true">
-            <div className="modal-card execution-detail-modal">
-              <h2 className="workflows-title">Detalle de ejecucion</h2>
-              <div className="form-group">
-                <p className="panel-label">Execution ID</p>
-                <p className="panel-value">{selectedExecution.id}</p>
-              </div>
-              <div className="form-group">
-                <p className="panel-label">Workflow</p>
-                <p className="panel-value">
-                  {workflowNameById[selectedExecution.workflowId] ??
-                    selectedExecution.workflowId}
-                </p>
-              </div>
-              <div className="form-group">
-                <p className="panel-label">Fecha</p>
-                <p className="panel-value">
-                  {formatExecutionDate(selectedExecution.executedAt)}
-                </p>
-              </div>
-              <div className="form-group">
-                <p className="panel-label">Estado</p>
-                <p className="panel-value">
-                  {selectedExecution.status === "SUCCESS" ? "OK" : "ERROR"}
-                </p>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Salida completa</label>
-                {selectedExecutionOutput ? (
-                  <section
-                    className="execution-output"
-                    aria-label="Resultado detallado de ejecucion"
-                  >
-                    <div className="execution-summary-grid">
-                      <article className="execution-summary-card">
-                        <p className="execution-summary-label">Estado del flujo</p>
-                        <p className="execution-summary-value">
-                          {selectedExecutionOutput.flow === null
-                            ? "No retornado"
-                            : "Disponible"}
-                        </p>
-                      </article>
-                      <article className="execution-summary-card">
-                        <p className="execution-summary-label">Variables recibidas</p>
-                        <p className="execution-summary-value">
-                          {selectedExecutionVariables.length}
-                        </p>
-                      </article>
-                    </div>
-                    {selectedExecutionVariables.length > 0 ? (
-                      <div className="execution-variables">
-                        <p className="execution-summary-label">Variables</p>
-                        <ul className="execution-variables-list">
-                          {selectedExecutionVariables.map((variable) => (
-                            <li key={variable.key} className="execution-variable-item">
-                              <span className="execution-variable-key">{variable.key}</span>
-                              <span className="execution-variable-value">
-                                {formatExecutionValue(variable.value)}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
-                  </section>
-                ) : (
-                  <textarea
-                    className="form-textarea"
-                    rows={10}
-                    readOnly
-                    value={selectedExecution.message}
-                  />
-                )}
-              </div>
-              <div className="form-actions">
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setSelectedExecution(null)}
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
-          </div>
+          <ExecutionDetailModal
+            execution={selectedExecution}
+            workflowNameById={workflowNameById}
+            onClose={() => setSelectedExecution(null)}
+          />
         )}
       </section>
     </Layout>

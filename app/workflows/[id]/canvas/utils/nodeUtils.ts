@@ -59,12 +59,11 @@ export const getNodeTypeInfo = (type: WorkflowNodeType) => {
  * Calcula el siguiente ID disponible para un nuevo nodo
  */
 export const calculateNextNodeId = (nodes: WorkflowNodeData[]): number => {
-  const maxNum =
-    nodes
-      .map((n) => Number(String(n.id).replace("node-", "")))
-      .filter((x) => Number.isFinite(x))
-      .reduce((a, b) => Math.max(a, b), 0) || 0;
-
+  let maxNum = 0;
+  for (const node of nodes) {
+    const num = Number(String(node.id).replace("node-", ""));
+    if (Number.isFinite(num) && num > maxNum) maxNum = num;
+  }
   return maxNum + 1;
 };
 

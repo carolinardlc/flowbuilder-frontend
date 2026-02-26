@@ -5,13 +5,13 @@ type ParseWorkflowImportResult =
   | { ok: true; workflow: ExportWorkflow; warning?: string }
   | { ok: false; error: string };
 
+// ──────────────────────────── guards ────────────────────────────
+
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return typeof value === "object" && value !== null;
 };
 
-const isNodeType = (
-  value: unknown,
-): value is ExportNode["type"] => {
+const isNodeType = (value: unknown): value is ExportNode["type"] => {
   return (
     value === "START" ||
     value === "COMMAND" ||
@@ -21,13 +21,83 @@ const isNodeType = (
   );
 };
 
+// ──────────────────────── ExportNode builders ────────────────────────
+
+const toStartNode = (id: string, name: string): ExportNode => ({
+  id,
+  name,
+  type: "START",
+});
+
+const toCommandNode = (
+  id: string,
+  name: string,
+  value: Record<string, unknown>,
+): ExportNode => ({
+  id,
+  name,
+  type: "COMMAND",
+  command: typeof value.command === "string" ? value.command : "",
+});
+
+const parseHttpNumericField = (raw: unknown): number | undefined =>
+  typeof raw === "number" && Number.isFinite(raw) ? raw : undefined;
+
+const toHttpNode = (
+  id: string,
+  name: string,
+  value: Record<string, unknown>,
+): ExportNode => ({
+  id,
+  name,
+  type: "HTTP",
+  url: typeof value.url === "string" ? value.url : "",
+  method: value.method === "POST" ? "POST" : "GET",
+  politica: value.politica === "CONTINUE" ? "CONTINUE" : "STOP",
+  timeout: parseHttpNumericField(value.timeout),
+  attempts: parseHttpNumericField(value.attempts),
+});
+
+const toConditionalNode = (
+  id: string,
+  name: string,
+  value: Record<string, unknown>,
+): ExportNode => ({
+  id,
+  name,
+  type: "CONDITIONAL",
+  target: typeof value.target === "string" ? value.target : undefined,
+});
+
+const toEndNode = (
+  id: string,
+  name: string,
+  value: Record<string, unknown>,
+): ExportNode => ({
+  id,
+  name,
+  type: "END",
+  outputType: typeof value.outputType === "string" ? value.outputType : undefined,
+  message: typeof value.message === "string" ? value.message : undefined,
+});
+
+type NodeBuilder = (
+  id: string,
+  name: string,
+  value: Record<string, unknown>,
+) => ExportNode;
+
+const NODE_BUILDERS: Record<ExportNode["type"], NodeBuilder> = {
+  START: (id, name) => toStartNode(id, name),
+  COMMAND: toCommandNode,
+  HTTP: toHttpNode,
+  CONDITIONAL: toConditionalNode,
+  END: toEndNode,
+};
+
 const toNode = (value: unknown): ExportNode | null => {
   if (!isRecord(value)) return null;
-
-  const id = value.id;
-  const name = value.name;
-  const type = value.type;
-
+  const { id, name, type } = value;
   if (
     (typeof id !== "string" && typeof id !== "number") ||
     typeof name !== "string" ||
@@ -35,62 +105,15 @@ const toNode = (value: unknown): ExportNode | null => {
   ) {
     return null;
   }
-
-  if (type === "START") {
-    return { id: String(id), name, type: "START" };
-  }
-
-  if (type === "COMMAND") {
-    return {
-      id: String(id),
-      name,
-      type: "COMMAND",
-      command: typeof value.command === "string" ? value.command : "",
-    };
-  }
-
-  if (type === "HTTP") {
-    const method = value.method === "POST" ? "POST" : "GET";
-    const timeout =
-      typeof value.timeout === "number" && Number.isFinite(value.timeout)
-        ? value.timeout
-        : undefined;
-    const attempts =
-      typeof value.attempts === "number" && Number.isFinite(value.attempts)
-        ? value.attempts
-        : undefined;
-
-    return {
-      id: String(id),
-      name,
-      type: "HTTP",
-      url: typeof value.url === "string" ? value.url : "",
-      method,
-      politica: value.politica === "CONTINUE" ? "CONTINUE" : "STOP",
-      timeout,
-      attempts,
-    };
-  }
-
-  if (type === "CONDITIONAL") {
-    return {
-      id: String(id),
-      name,
-      type: "CONDITIONAL",
-      target: typeof value.target === "string" ? value.target : undefined,
-    };
-  }
-
-  return {
-    id: String(id),
-    name,
-    type: "END",
-    outputType: typeof value.outputType === "string" ? value.outputType : undefined,
-    message: typeof value.message === "string" ? value.message : undefined,
-  };
+  return NODE_BUILDERS[type](String(id), name, value);
 };
 
-const buildLevels = (nodes: ExportNode[], connections: ExportWorkflow["connections"]) => {
+// ─────────────────────── graph / layout ─────────────────────────
+
+const buildGraph = (
+  nodes: ExportNode[],
+  connections: ExportWorkflow["connections"],
+) => {
   const outgoing = new Map<string, string[]>();
   const incoming = new Map<string, number>();
 
@@ -107,13 +130,24 @@ const buildLevels = (nodes: ExportNode[], connections: ExportWorkflow["connectio
     incoming.set(connection.toNodeId, (incoming.get(connection.toNodeId) ?? 0) + 1);
   });
 
+  return { outgoing, incoming };
+};
+
+const findRoots = (
+  nodes: ExportNode[],
+  incoming: Map<string, number>,
+): string[] => {
+  const startIds = nodes.filter((n) => n.type === "START").map((n) => n.id);
+  if (startIds.length > 0) return startIds;
+  return nodes.filter((n) => (incoming.get(n.id) ?? 0) === 0).map((n) => n.id);
+};
+
+const runBFS = (
+  roots: string[],
+  outgoing: Map<string, string[]>,
+): Map<string, number> => {
   const levels = new Map<string, number>();
   const queue: string[] = [];
-  const startIds = nodes.filter((n) => n.type === "START").map((n) => n.id);
-  const roots =
-    startIds.length > 0
-      ? startIds
-      : nodes.filter((n) => (incoming.get(n.id) ?? 0) === 0).map((n) => n.id);
 
   roots.forEach((id) => {
     levels.set(id, 0);
@@ -124,9 +158,7 @@ const buildLevels = (nodes: ExportNode[], connections: ExportWorkflow["connectio
     const current = queue.shift();
     if (!current) continue;
     const currentLevel = levels.get(current) ?? 0;
-    const nexts = outgoing.get(current) ?? [];
-
-    nexts.forEach((next) => {
+    (outgoing.get(current) ?? []).forEach((next) => {
       const nextLevel = currentLevel + 1;
       const existing = levels.get(next);
       if (existing === undefined || nextLevel > existing) {
@@ -135,6 +167,17 @@ const buildLevels = (nodes: ExportNode[], connections: ExportWorkflow["connectio
       if (!queue.includes(next)) queue.push(next);
     });
   }
+
+  return levels;
+};
+
+const buildLevels = (
+  nodes: ExportNode[],
+  connections: ExportWorkflow["connections"],
+): Map<string, number> => {
+  const { outgoing, incoming } = buildGraph(nodes, connections);
+  const roots = findRoots(nodes, incoming);
+  const levels = runBFS(roots, outgoing);
 
   let fallback = Array.from(levels.values()).reduce((m, v) => Math.max(m, v), 0) + 1;
   nodes.forEach((node) => {
@@ -147,38 +190,33 @@ const buildLevels = (nodes: ExportNode[], connections: ExportWorkflow["connectio
   return levels;
 };
 
+// ─────────────────── canvas node converters ─────────────────────
+
 const resolveCanvasPosition = (
   positions: Map<string, { x: number; y: number }>,
   nodeId: string,
   fallbackIndex: number,
 ) => {
-  return (
-    positions.get(nodeId) ?? {
-      x: 120 + fallbackIndex * 220,
-      y: 140,
-    }
-  );
+  return positions.get(nodeId) ?? { x: 120 + fallbackIndex * 220, y: 140 };
 };
 
 const toCanvasHttpNode = (
   node: Extract<ExportNode, { type: "HTTP" }>,
   position: { x: number; y: number },
-): WorkflowNodeData => {
-  return {
-    id: node.id,
-    title: node.name,
-    type: "HTTP_REQUEST",
-    x: position.x,
-    y: position.y,
-    config: {
-      method: node.method,
-      url: node.url ?? "",
-      timeoutMs: typeof node.timeout === "number" ? String(node.timeout) : undefined,
-      retries: typeof node.attempts === "number" ? String(node.attempts) : undefined,
-      errorPolicy: node.politica === "CONTINUE" ? "CONTINUE" : "STOP",
-    },
-  };
-};
+): WorkflowNodeData => ({
+  id: node.id,
+  title: node.name,
+  type: "HTTP_REQUEST",
+  x: position.x,
+  y: position.y,
+  config: {
+    method: node.method,
+    url: node.url ?? "",
+    timeoutMs: typeof node.timeout === "number" ? String(node.timeout) : undefined,
+    retries: typeof node.attempts === "number" ? String(node.attempts) : undefined,
+    errorPolicy: node.politica === "CONTINUE" ? "CONTINUE" : "STOP",
+  },
+});
 
 const toCanvasCommandNode = (
   node: Extract<ExportNode, { type: "COMMAND" }>,
@@ -246,6 +284,68 @@ const toCanvasNode = (
   return toCanvasStartNode(node, position);
 };
 
+// ─────────────────── parsing / validation ───────────────────────
+
+const parseNodes = (
+  rawNodes: unknown[],
+): { ok: true; nodes: ExportNode[] } | { ok: false; error: string } => {
+  const nodes: ExportNode[] = [];
+  for (const rawNode of rawNodes) {
+    const node = toNode(rawNode);
+    if (!node) return { ok: false, error: "Nodo invalido en el JSON." };
+    nodes.push(node);
+  }
+  return { ok: true, nodes };
+};
+
+const parseConnectionItem = (
+  raw: unknown,
+): ExportWorkflow["connections"][number] | null => {
+  if (!isRecord(raw)) return null;
+  const { fromNodeId: from, toNodeId: to, condition } = raw;
+  if (
+    (typeof from !== "string" && typeof from !== "number") ||
+    (typeof to !== "string" && typeof to !== "number")
+  ) {
+    return null;
+  }
+  return {
+    fromNodeId: String(from),
+    toNodeId: String(to),
+    condition: typeof condition === "boolean" ? condition : true,
+  };
+};
+
+type ParseConnectionsResult =
+  | { ok: true; connections: ExportWorkflow["connections"]; invalidCount: number }
+  | { ok: false; error: string };
+
+const parseConnections = (rawConnections: unknown[]): ParseConnectionsResult => {
+  const connections: ExportWorkflow["connections"] = [];
+  let invalidCount = 0;
+
+  for (const raw of rawConnections) {
+    const connection = parseConnectionItem(raw);
+    if (!connection) {
+      invalidCount += 1;
+      continue;
+    }
+    connections.push(connection);
+  }
+
+  if (connections.length === 0 && rawConnections.length > 0) {
+    return {
+      ok: false,
+      error:
+        "Conexiones invalidas. Cada conexion debe incluir fromNodeId y toNodeId (mismo formato que POST).",
+    };
+  }
+
+  return { ok: true, connections, invalidCount };
+};
+
+// ─────────────────────── public exports ─────────────────────────
+
 export const parseWorkflowImportData = (
   data: unknown,
 ): ParseWorkflowImportResult => {
@@ -253,10 +353,7 @@ export const parseWorkflowImportData = (
     return { ok: false, error: "El archivo debe ser un objeto JSON." };
   }
 
-  const id = data.id;
-  const name = data.name;
-  const rawNodes = data.nodes;
-  const rawConnections = data.connections;
+  const { id, name, nodes: rawNodes, connections: rawConnections } = data;
 
   if (
     (typeof id !== "string" && typeof id !== "number") ||
@@ -270,53 +367,15 @@ export const parseWorkflowImportData = (
     };
   }
 
-  const nodes: ExportNode[] = [];
-  for (const rawNode of rawNodes) {
-    const node = toNode(rawNode);
-    if (!node) {
-      return { ok: false, error: "Nodo invalido en el JSON." };
-    }
-    nodes.push(node);
-  }
+  const nodesResult = parseNodes(rawNodes);
+  if (!nodesResult.ok) return nodesResult;
 
-  const connections: ExportWorkflow["connections"] = [];
-  let invalidConnectionCount = 0;
-
-  for (const rawConnection of rawConnections) {
-    if (!isRecord(rawConnection)) {
-      invalidConnectionCount += 1;
-      continue;
-    }
-    const from = rawConnection.fromNodeId;
-    const to = rawConnection.toNodeId;
-    const condition = rawConnection.condition;
-
-    if (
-      (typeof from !== "string" && typeof from !== "number") ||
-      (typeof to !== "string" && typeof to !== "number")
-    ) {
-      invalidConnectionCount += 1;
-      continue;
-    }
-
-    connections.push({
-      fromNodeId: String(from),
-      toNodeId: String(to),
-      condition: typeof condition === "boolean" ? condition : true,
-    });
-  }
-
-  if (connections.length === 0 && rawConnections.length > 0) {
-    return {
-      ok: false,
-      error:
-        "Conexiones invalidas. Cada conexion debe incluir fromNodeId y toNodeId (mismo formato que POST).",
-    };
-  }
+  const connectionsResult = parseConnections(rawConnections);
+  if (!connectionsResult.ok) return connectionsResult;
 
   const warning =
-    invalidConnectionCount > 0
-      ? `Se omitieron ${invalidConnectionCount} conexiones invalidas durante la importacion.`
+    connectionsResult.invalidCount > 0
+      ? `Se omitieron ${connectionsResult.invalidCount} conexiones invalidas durante la importacion.`
       : undefined;
 
   return {
@@ -324,8 +383,8 @@ export const parseWorkflowImportData = (
     workflow: {
       id: String(id),
       name,
-      nodes,
-      connections,
+      nodes: nodesResult.nodes,
+      connections: connectionsResult.connections,
     },
     warning,
   };
@@ -340,13 +399,13 @@ export const parseWorkflowImportJson = (
   } catch {
     return { ok: false, error: "JSON invalido." };
   }
-
   return parseWorkflowImportData(data);
 };
 
 export const convertWorkflowToCanvasSnapshot = (workflow: ExportWorkflow) => {
   const levels = buildLevels(workflow.nodes, workflow.connections);
   const groups = new Map<number, ExportNode[]>();
+
   workflow.nodes.forEach((node) => {
     const level = levels.get(node.id) ?? 0;
     const list = groups.get(level) ?? [];
@@ -358,8 +417,7 @@ export const convertWorkflowToCanvasSnapshot = (workflow: ExportWorkflow) => {
   Array.from(groups.keys())
     .sort((a, b) => a - b)
     .forEach((level) => {
-      const nodes = groups.get(level) ?? [];
-      nodes.forEach((node, index) => {
+      (groups.get(level) ?? []).forEach((node, index) => {
         positions.set(node.id, {
           x: 120 + level * 300,
           y: 120 + index * 160,
