@@ -20,6 +20,57 @@ import DragPreview from "./components/DragPreview";
 import ExecutionLayer from "./components/ExecutionLayer";
 
 type IncomingNodeOption = { id: string; name: string; type: string };
+type WorkflowExecutionVariable = { key: string; value: unknown };
+type WorkflowExecutionOutput = {
+  flow: unknown;
+  variableList: WorkflowExecutionVariable[];
+};
+
+const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const parseExecutionOutput = (rawOutput: string): WorkflowExecutionOutput | null => {
+  if (!rawOutput.trim()) return null;
+  try {
+    const parsed = JSON.parse(rawOutput) as unknown;
+    if (!isObjectRecord(parsed)) return null;
+    const variableListRaw = parsed.variableList;
+    const variableList = Array.isArray(variableListRaw)
+      ? variableListRaw
+          .filter(isObjectRecord)
+          .filter(
+            (
+              item,
+            ): item is {
+              key: string;
+              value?: unknown;
+            } => typeof item.key === "string",
+          )
+          .map((item) => ({ key: item.key, value: item.value }))
+      : [];
+    return { flow: parsed.flow, variableList };
+  } catch {
+    return null;
+  }
+};
+
+const getVisibleExecutionVariables = (
+  variables: WorkflowExecutionVariable[],
+): WorkflowExecutionVariable[] =>
+  variables.filter((variable) => typeof variable.value !== "boolean");
+
+const formatExecutionValue = (value: unknown): string => {
+  if (value === null) return "null";
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? String(value) : "NaN";
+  if (typeof value === "undefined") return "undefined";
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+};
 
 const buildIncomingConnectionsIndex = (connections: Connection[]) => {
   const incomingByTo = new Map<string, string[]>();
@@ -184,6 +235,10 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
     handleDownloadJson,
     handleExecuteWorkflow,
   } = useWorkflowExecution({ workflowId, workflowName, nodes, connections });
+  const parsedExecutionOutput = parseExecutionOutput(backendTerminalOutput);
+  const visibleExecutionVariables = parsedExecutionOutput
+    ? getVisibleExecutionVariables(parsedExecutionOutput.variableList)
+    : [];
 
   const handleCanvasMouseUpWithNodeCreation = (e: React.MouseEvent) => {
     const nodeType = dragState.newNodeType;
@@ -422,15 +477,50 @@ export default function Canvas({ workflowId, actions }: CanvasProps) {
         message={sendResult.message}
         onClose={() => setIsSendOpen(false)}
       >
-        <div className="form-group" style={{ marginTop: "14px" }}>
-          <label className="form-label">Terminal de salida</label>
-          <textarea
-            className="form-textarea"
-            value={backendTerminalOutput}
-            readOnly
-            rows={10}
-          />
-        </div>
+        {parsedExecutionOutput ? (
+          <section className="execution-output" aria-label="Resultado de ejecucion">
+            <div className="execution-summary-grid">
+              <article className="execution-summary-card">
+                <p className="execution-summary-label">Estado del flujo</p>
+                <p className="execution-summary-value">
+                  {parsedExecutionOutput.flow === null ? "No retornado" : "Disponible"}
+                </p>
+              </article>
+              <article className="execution-summary-card">
+                <p className="execution-summary-label">Variables recibidas</p>
+                <p className="execution-summary-value">
+                  {visibleExecutionVariables.length}
+                </p>
+              </article>
+            </div>
+
+            {visibleExecutionVariables.length > 0 ? (
+              <div className="execution-variables">
+                <p className="execution-summary-label">Variables</p>
+                <ul className="execution-variables-list">
+                  {visibleExecutionVariables.map((variable) => (
+                    <li key={variable.key} className="execution-variable-item">
+                      <span className="execution-variable-key">{variable.key}</span>
+                      <span className="execution-variable-value">
+                        {formatExecutionValue(variable.value)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </section>
+        ) : (
+          <div className="form-group" style={{ marginTop: "14px" }}>
+            <label className="form-label">Terminal de salida</label>
+            <textarea
+              className="form-textarea"
+              value={backendTerminalOutput}
+              readOnly
+              rows={10}
+            />
+          </div>
+        )}
       </StatusModal>
     </div>
   );
